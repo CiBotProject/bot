@@ -22,6 +22,7 @@ We have chosen to address the stated problems of inaccessibility, rigidity, and 
 **NOTE:** While there is already a [Travis CI bot for Slack][3], it is a simple notifier that sends messages for build completions and pull requests, and does not address the problems of continuous integration stated in the first section.
 
 ### INACCESSIBILITY:
+
 ***Setup is time-intensive and configuration options are arcane.***
 
 To address the problem of increased time-cost in the beginning phases of CI projects, as well as the initial learning curve of CI configuration, our bot would provide a suite of easily-understood commands for automatically creating and editing the .travis.yml file.  Our bot would be able to prompt the user with certain questions about the integration environment they are creating, and would respond accordingly with the proper output to the configuration file.  The user would have the option of calling on the bot to edit the configuration file at any time, making changes quickly and easily as the requirements of the environment change.  The bot could also prompt users to save commonly used configurations for future projects in a bank accessible to the bot, significantly reducing time cost by eliminating the need to repeat identical processes.  We would likely limit this feature to certain languages and environments as a proof-of-concept first, and could expand the capabilities as time allows.
