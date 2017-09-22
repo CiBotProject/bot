@@ -1,4 +1,4 @@
-# SlaGit
+# CiBot
 
 Team Members:
 
