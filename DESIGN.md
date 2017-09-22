@@ -241,21 +241,15 @@ Test suites have required proper coveralls files
 
 ### Configuring .travis.yml
 
-![alt text](design-assets/configure-travis.jpg)
+![alt text](design-assets/Configure_Travis.pdf)
 
 ### Issue creation on build failure
 
-![alt text](design-assets/build-fail-options.jpg)
-
-![alt text](design-assets/create-issue.jpg)
-
-![alt text](design-assets/no-issue.jpg)
-
-![alt text](design-assets/update-issue-details.jpg)
+![alt text](design-assets/Build_Failure.pdf)
 
 ### Code coverage notifications
 
-![alt text](design-assets/code-coverage.jpg)
+![alt text](design-assets/Coverage_Loss.pdf)
 
 ## 5. Architecture Design
 
