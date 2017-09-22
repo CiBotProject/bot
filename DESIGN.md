@@ -175,6 +175,24 @@ logical organization of projects.
 
 ## 4. Design Sketches
 
+### Configuring .travis.yml
+
+![alt text](design-assets/configure-travis.jpg)
+
+### Issue creation on build failure
+
+![alt text](design-assets/build-fail-options.jpg)
+
+![alt text](design-assets/create-issue.jpg)
+
+![alt text](design-assets/no-issue.jpg)
+
+![alt text](design-assets/update-issue-details.jpg)
+
+### Code coverage notifications
+
+![alt text](design-assets/code-coverage.jpg)
+
 ## 5. Architecture Design
 
 ### Diagram
