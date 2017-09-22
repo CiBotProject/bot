@@ -183,21 +183,21 @@ logical organization of projects.
 
 ### Description
 
-The bot runs off a Node .js server that would be hosted on a hosting platform such as Heroku.
-The user interacts with the bot through the Slack interface which matches commands using the Slack API. The Slack bot handles different commands such as ‘configure Travis’. The bot creates the travis.yml template file, which can be edited by the user if the command is to configure builds.
-Whenever a push is made to the Git repo, the Travis CI build starts. The Travis CI API can then be used to extract information about the build such as start time, finish time, and build status. The Slack bot can make REST calls to the Travis CI and Coveralls APIs to obtain the statistics which can then be relayed to the user.
+The bot runs off a Node .js server that would be hosted on a hosting platform such as Heroku.  
+The user interacts with the bot through the Slack interface which matches commands using the Slack API. The Slack bot handles different commands such as ‘configure Travis’. The bot creates the travis.yml template file, which can be edited by the user if the command is to configure builds.  
+Whenever a push is made to the Git repo, the Travis CI build starts. The Travis CI API can then be used to extract information about the build such as start time, finish time, and build status. The Slack bot can make REST calls to the Travis CI and Coveralls APIs to obtain the statistics which can then be relayed to the user.  
 The Slack bot code would handle creating GitHub issues if the build fails or if adequate tests are not delivered and if the user confirms the creation of the issue.
 
 ### Constraints
 
-One of the major constraints is to design the communication interface between the APIs.
-Once the build starts after the push has been made, one possible design is to have the bot poll the Travis API for build stats. However, it would be more efficient to develop a notification mechanism by which the bot is notified when the build finishes and the stats.
+One of the major constraints is to design the communication interface between the APIs.  
+Once the build starts after the push has been made, one possible design is to have the bot poll the Travis API for build stats. However, it would be more efficient to develop a notification mechanism by which the bot is notified when the build finishes and the stats.  
 The bot cannot manage multiple projects within a single conversation. If there are a lot of projects, you’d need to have a Slack channels for each them.
 
 ### Design Patterns
 
-The bot would use a combination of a Space Responder and a Notifier design pattern.
+The bot would use a combination of a Space Responder and a Notifier design pattern.  
 The Space Responder pattern would be a suitable bot design pattern because the bot:
 reacts to messages (commands such as ‘configure .travis.yml’)
-maintains state and context (mappings between Slack and GitHub users, specific Slack channels for projects).
+maintains state and context (mappings between Slack and GitHub users, specific Slack channels for projects).  
 The Notifier pattern would also be relevant because the bot sends notifications to the user regarding build failures and test coverage statistics.
