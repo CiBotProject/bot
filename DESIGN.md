@@ -106,10 +106,10 @@ ignored.***
 
 To address the problem of halted progress due to build failures, our bot would
 automatically parse any error messages produced by the build failure and return
-them in a legible format to the members of the appropriate Slack channel, along
+them in an actionable format to the members of the appropriate Slack channel along
 with any relevant metrics.  It would then ask the team if they would like to
 [create a GitHub issue for the build failure][4], and if so, who should be
-assigned to the issue.  The team would have the option to choose a “you break it
+assign someone to the issue.  The team would have the option to choose a “you break it
 you fix it” model, where the bot would automatically assign these issues to the
 last person who made a commit (i.e., the culprit of the build failure, and also
 the person most likely to know what was changed and what went wrong), or
