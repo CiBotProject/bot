@@ -56,7 +56,7 @@ for the users to keep track of and navigate through, discouraging developers fro
 taking full advantage of the benefits that CI could offer.  We’ll refer to this
 as CI’s “decentralized workflow” problem.
 
-If these problems of inaccessiblity, rigidity, and decentralized work flow were
+If these problems of inaccessibility, rigidity, and decentralized work flow were
 resolved, CI could be opened up to a broader base of users who are able to take
 full advantage of its strengths and benefits.
 
@@ -165,13 +165,77 @@ GitHub, Coveralls, and Travis CI, but would be limited to a single project per
 Slack channel (a separate Slack channel can be created for each additional project).  
 This segregation of projects into channels would allow for certain context-based
 inferences (i.e., the specific GitHub repo in use, the corresponding Travis CI
-configurations, and the deployment platform for that project) and enforce a 
+configurations, and the deployment platform for that project) and enforce a
 logical organization of projects.
 
 [3]: https://slagit.slack.com/apps/A0F81FP4N-travis-ci
 [4]: https://github.com/travis-ci/travis-ci/issues/7199
 
 ## 3. Use Cases
+
+### 3.1 Configuring travis.yml
+
+1. Precondition
+    * User must have Github api token in the system
+    * User needs to setup Github repo in Travis CI
+    * User has created a Node.js public project on Github
+2. Main flow
+
+    User will request configuring the Travis and provide the name of public repo [S1].
+    Bot asks for additional information that user must submit [S2]. Bot creates travis.yml
+    file and pushes it to the repository [S3].
+3. Subflows
+
+    [S1] User provides /init travis command with name of repo
+
+    [S2] Bot will return list of techs that it supports (ex: Node, Ruby, etc.). And user
+    confirms them.
+
+    [S3] Bot creates template travis.yml file and pushes it to the repository. The bot notifies
+    the Slack channel.
+4. Alternative flows
+    * If the repository language is not supported, the bot will return an error message and
+    gives the link for the Travis documentation.
+
+### 3.2 Creating issue if the build fails
+1. Precondition
+  * User must have Github api token in system.
+  * The build should lead to a failure
+2. Main flow
+
+  Travis CI notifies bot of build failure along with the reason and uid of developer who started the build.
+  Bot notifies developer of the failure and reason.
+  Bot asks the developer if the failure calls for an issue to be created immediately [S1], add a different title/update assignees [S2] or not create the issue [S3].
+  The bot creates an issue on the appropriate github repository branch.
+3. Subflows
+
+  [S1] The bot will auto-generate an issue name and auto-assign it to the developer who started the build. If the user accepts the auto-generated details, the issue is created immediately
+
+  [S2] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot
+
+  [S3] If the user does not want to create an issue, the bot would not go forward with issue creation
+4. Alternative flows
+
+### 3.3 Code coverage notifications
+1. Precondition
+User must have Coveralls api token in system.
+Coveralls.io should be integrated with Travis CI
+Test suites have required proper coveralls files
+2. Main flow
+  When a push is made, the bot checks the coveralls coverage report
+  If a change is pushed resulting in a decrease in coverage, the bot will ask the developer if the failure calls for an issue to be created immediately [S2], add a different title/update assignees [S3] or not create the issue [S4].
+  The bot will create an issue to implement necessary test cases for the delivered code
+3. Subflows
+
+  [S1] When setting up the bot, the developers have the ability to set the notification threshold
+
+  [S2] The bot will auto-generate an issue name and auto-assign it to the developer who started the build. If the user accepts the auto-generated details, the issue is created immediately
+
+  [S3] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot.
+
+  [S4] If the user does not want to create an issue, the bot would not go forward with the issue creation.
+4. Alternative flows
+
 
 ## 4. Design Sketches
 
