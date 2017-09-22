@@ -211,18 +211,18 @@ logical organization of projects.
 
 2. Main flow
 
-  Travis CI notifies bot of build failure along with the reason and uid of developer who started the build.
-  Bot notifies developer of the failure and reason.
-  Bot asks the developer if the failure calls for an issue to be created immediately [S1], add a different title/update assignees [S2] or not create the issue [S3].
-  The bot creates an issue on the appropriate github repository branch.
+	Travis CI notifies bot of build failure along with the reason and uid of developer who started the build.
+	Bot notifies developer of the failure and reason.
+	Bot asks the developer if the failure calls for an issue to be created immediately [S1], add a different title/update assignees [S2] or not create the issue [S3].
+	The bot creates an issue on the appropriate github repository branch.
 
 3. Subflows
 
-  [S1] The bot will auto-generate an issue name and auto-assign it to the developer who started the build. If the user accepts the auto-generated details, the issue is created immediately
+	[S1] The bot will auto-generate an issue name and auto-assign it to the developer who started the build. If the user accepts the auto-generated details, the issue is created immediately
 
-  [S2] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot
+	[S2] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot
 
-  [S3] If the user does not want to create an issue, the bot would not go forward with issue creation
+	[S3] If the user does not want to create an issue, the bot would not go forward with issue creation
   
 4. Alternative flows
 
@@ -242,13 +242,13 @@ logical organization of projects.
   
 3. Subflows
 
-  [S1] When setting up the bot, the developers have the ability to set the notification threshold
+	[S1] When setting up the bot, the developers have the ability to set the notification threshold
 
-  [S2] The bot will auto-generate an issue name and auto-assign it to the developer who started the build. If the user accepts the auto-generated details, the issue is created immediately
+	[S2] The bot will auto-generate an issue name and auto-assign it to the developer who started the build. If the user accepts the auto-generated details, the issue is created immediately
 
-  [S3] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot.
+	[S3] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot.
 
-  [S4] If the user does not want to create an issue, the bot would not go forward with the issue creation.
+	[S4] If the user does not want to create an issue, the bot would not go forward with the issue creation.
   
 4. Alternative flows
 
