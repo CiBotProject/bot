@@ -170,9 +170,10 @@ The Slack bot code would handle creating GitHub issues if the build fails or if 
 
 ### Constraints
 
-One of the major constraints is to design the communication interface between the APIs.  
-Once the build starts after the push has been made, one possible design is to have the bot poll the Travis API for build stats. However, it would be more efficient to develop a notification mechanism by which the bot is notified when the build finishes and the stats can then be requested.  
-The bot cannot manage multiple projects within a single conversation. If there are a lot of projects, you’d need to have  Slack channels for each of them.
+* The bot cannot manage multiple projects within a single conversation.
+* All Github repositories should be owned by the same individual/organization to allow the use of a single API key.
+* Only some members of the team should be allowed to give authorization for assigning issues to other individuals.
+
 
 ### Design Patterns
 
