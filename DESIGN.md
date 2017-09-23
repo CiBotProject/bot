@@ -1,5 +1,16 @@
 # Design Milestone
 
+## Table of Contents
+
+### [1. Problem Statement](#1-problem-statement)
+### [2. Bot Description](#2-bot-description)
+### [3. Use Cases](#3-use-cases)
+#### [3.1 Configuring .travis.yml and .coveralls.yml](#31-configuring-travisyml-and-coverallsyml)
+#### [3.2 Creating issues if the build fails](#32-creating-issue2-if-the-build-fails)
+#### [3.3 Code coverage notifications](#33-code-coverage-notifications)
+### [4. Design Sketches](#4-design-sketches)
+### [5. Architecture Design](#5-architecture-design)
+
 ## 1. Problem Statement
 
 Continuous integration (CI) is an approach to the software development process in which disparate working branches are constantly merged with the master branch, oftentimes after each incremental change or added feature.  One of the main advantages of CI is that it avoids “integration hell,” a situation that arises when individual team members work on separate branches for extended periods of time before merging to the master branch. Delaying branch merging greatly increases the chances that incompatible code changes are made which will then take an inordinate amount of time and effort to integrate.  However, CI does not come without its own problems. In order to effectively practice CI, developers need be constantly aware of broken builds and failing tests caused by these frequent changes. In order to ease the burden on the developer, companies have created tools to automate some of these routine tasks (i.e. performing automated builds of and tests on the code base).  By routinely building and testing, these tools allows bugs and other errors to be quickly discovered and resolved during the development process.  In this way, CI becomes a natural complement to test-driven development, allowing stable and deployable code to be produced throughout the development cycle.
@@ -82,7 +93,7 @@ In terms of design and categorization, this bot would be most similar to a Space
 
 	[E1] If the repository language is not supported, the bot will return an error message and gives the link for the Travis documentation.
 
-### 3.2 Creating issue if the build fails
+### 3.2 Creating issues if the build fails
 
 1. Precondition
 
