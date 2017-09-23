@@ -1,15 +1,15 @@
-# Design Milestone
-
 ## Table of Contents
 
-### [1. Problem Statement](#1-problem-statement)
-### [2. Bot Description](#2-bot-description)
-### [3. Use Cases](#3-use-cases)
-#### [3.1 Configuring .travis.yml and .coveralls.yml](#31-configuring-travisyml-and-coverallsyml)
-#### [3.2 Creating issues if the build fails](#32-creating-issue2-if-the-build-fails)
-#### [3.3 Code coverage notifications](#33-code-coverage-notifications)
-### [4. Design Sketches](#4-design-sketches)
-### [5. Architecture Design](#5-architecture-design)
+### [1. Problem Statement](#1-problem-statement-1)
+### [2. Bot Description](#2-bot-description-1)
+### [3. Use Cases](#3-use-cases-1)
+#### [3.1 Configuring .travis.yml and .coveralls.yml](#31-configuring-travisyml-and-coverallsyml-1)
+#### [3.2 Creating issues if the build fails](#32-creating-issue2-if-the-build-fails-1)
+#### [3.3 Code coverage notifications](#33-code-coverage-notifications-1)
+### [4. Design Sketches](#4-design-sketches-1)
+### [5. Architecture Design](#5-architecture-design-1)
+
+# Design Milestone
 
 ## 1. Problem Statement
 
