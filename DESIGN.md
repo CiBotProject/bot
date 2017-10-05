@@ -1,3 +1,14 @@
+## Table of Contents
+
+### [1. Problem Statement](#1-problem-statement-1)
+### [2. Bot Description](#2-bot-description-1)
+### [3. Use Cases](#3-use-cases-1)
+#### [3.1 Configuring .travis.yml and .coveralls.yml](#31-configuring-travisyml-and-coverallsyml-1)
+#### [3.2 Creating issues if the build fails](#32-creating-issue2-if-the-build-fails-1)
+#### [3.3 Code coverage notifications](#33-code-coverage-notifications-1)
+### [4. Design Sketches](#4-design-sketches-1)
+### [5. Architecture Design](#5-architecture-design-1)
+
 # Design Milestone
 
 ## 1. Problem Statement
@@ -41,7 +52,7 @@ To address the problem of maintaining separate tools from separate user interfac
 
 ### Why a Bot?
 
-Since CI workflows often require using multiple tools in concert, creating a bot to act as an intermediary will drastically reduce the amount of effort to coordinate between the tools. Use of these tools is further simplified with a bot since developers can perform actions using a natural language syntax instead of having to learn specific (and potentially complex) syntax for each tool. Creating a bot with stored internal state will further reduce developer load by allowing repetitive actions to be simply replayed (i.e. deploying the same .travis.yml file to multiple repositories). If a specific monitored event can have a consistent pre-defined action, a bot is also useful for reducing the reaction time as it can respond without prompting. 
+Since CI workflows often require using multiple tools in concert, creating a bot to act as an intermediary will drastically reduce the amount of effort to coordinate between the tools. Use of these tools is further simplified with a bot since developers can perform actions using a natural language syntax instead of having to learn specific (and potentially complex) syntax for each tool. Creating a bot with stored internal state will further reduce developer load by allowing repetitive actions to be simply replayed (i.e. deploying the same .travis.yml file to multiple repositories). If a specific monitored event can have a consistent pre-defined action, a bot is also useful for reducing the reaction time as it can respond without prompting.
 
 ### What Kind of Bot?
 
@@ -54,7 +65,7 @@ In terms of design and categorization, this bot would be most similar to a Space
 
 ## 3. Use Cases
 
-### 3.1 Configuring travis.yml
+### 3.1 Configuring .travis.yml and .coveralls.yml
 
 1. Precondition
 
@@ -64,26 +75,25 @@ In terms of design and categorization, this bot would be most similar to a Space
 
 2. Main flow
 
-    User will request configuring the Travis and provide the name of public repo [S1].
-    Bot asks for additional information that user must submit [S2]. Bot creates travis.yml
-    file and pushes it to the repository [S3].
-    
+  User will request configuring the .travis.yml and provide the name of public repo [S1].
+  Bot asks for additional information that user must submit [S2]. Bot creates travis.yml
+  file and pushes it to the repository [S3].
+
 3. Subflows
 
-    [S1] User provides /init travis command with name of repo
+  [S1] User provides /init travis command with name of repo
 
-    [S2] Bot will return list of techs that it supports (ex: Node, Ruby, etc.). And user
-    confirms them.
+  [S2] Bot will return list of techs that it supports (ex: Node, Ruby, etc.). And user
+  confirms them.
 
-    [S3] Bot creates template travis.yml file and pushes it to the repository. The bot notifies
-    the Slack channel.
-    
+  [S3] Bot creates template travis.yml file and pushes it to the repository. The bot notifies
+  the Slack channel.
+
 4. Alternative flows
 
-    If the repository language is not supported, the bot will return an error message and
-    gives the link for the Travis documentation.
+	[E1] If the repository language is not supported, the bot will return an error message and gives the link for the Travis documentation.
 
-### 3.2 Creating issue if the build fails
+### 3.2 Creating issues if the build fails
 
 1. Precondition
 
@@ -104,8 +114,12 @@ In terms of design and categorization, this bot would be most similar to a Space
 	[S2] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot
 
 	[S3] If the user does not want to create an issue, the bot would not go forward with issue creation
-  
+
 4. Alternative flows
+
+	[E1] If the build succeeds, the bot will not pass any messages to the user
+
+	[E2] If the issue creation returns an error, the bot will relay that error to the user
 
 ### 3.3 Code coverage notifications
 
@@ -120,7 +134,7 @@ In terms of design and categorization, this bot would be most similar to a Space
 	When a push is made, the bot checks the coveralls coverage report.
 	If a change is pushed resulting in a decrease in coverage, the bot will ask the developer if the failure calls for an issue to be created immediately [S2], add a different title/update assignees [S3] or not create the issue [S4].
 	The bot will create an issue to implement necessary test cases for the delivered code
-  
+
 3. Subflows
 
 	[S1] When setting up the bot, the developers have the ability to set the notification threshold
@@ -130,8 +144,10 @@ In terms of design and categorization, this bot would be most similar to a Space
 	[S3] The bot will ask the developer for the issue title and to assign different people to the issue. Once the user enters these details, the issue is created by the bot.
 
 	[S4] If the user does not want to create an issue, the bot would not go forward with the issue creation.
-  
+
 4. Alternative flows
+
+	[E1] No test cases have been written to hook into Coveralls
 
 ## 4. Design Sketches
 
@@ -155,17 +171,20 @@ In terms of design and categorization, this bot would be most similar to a Space
 
 ### Description
 
-The bot runs off a Node .js server that would be hosted on a hosting platform such as Heroku.  
-For each GitHub project, a dedicated Slack channel would be created which would allow users to communicate with the Slack bot and issue commands.  
-The user interacts with the bot through the Slack interface which matches commands using the Slack API. The Slack bot handles different commands such as ‘configure Travis’. The bot creates the travis.yml template file, which can be edited by the user if the command is to configure builds.  
-Whenever a push is made to the Git repo, the Travis CI build starts. The Travis CI API can then be used to extract information about the build such as start time, finish time, and build status. The Slack bot can make REST calls to the Travis CI and Coveralls APIs to obtain the statistics which can then be relayed to the user.  
+The bot runs as a Node .js server on a hosting platform such as Heroku.
+The user interacts with the bot through the Slack interface which matches commands using the Slack API.
+There is a 1:1 mapping between slack channels and Github repositories (i.e. each repository and associated tools have a dedicated channel for all communication to happen), but all channels share a single database for user mapping and configuration settings.
+Within each channel, the Slack bot handles different commands such as ‘configure Travis’. The bot creates the travis.yml template file, which can be edited by the user if the command is to configure builds.
+Whenever a push is made to the Git repo, the Travis CI build starts. The Travis CI API can then be used to extract information about the build such as start time, finish time, and build status. The Slack bot can make REST calls to the Travis CI and Coveralls APIs to obtain the statistics which can then be relayed to the user.
 The Slack bot code would handle creating GitHub issues if the build fails or if adequate tests are not delivered and if the user confirms the creation of the issue.
+
 
 ### Constraints
 
-One of the major constraints is to design the communication interface between the APIs.  
-Once the build starts after the push has been made, one possible design is to have the bot poll the Travis API for build stats. However, it would be more efficient to develop a notification mechanism by which the bot is notified when the build finishes and the stats can then be requested.  
-The bot cannot manage multiple projects within a single conversation. If there are a lot of projects, you’d need to have  Slack channels for each of them.
+* The bot cannot manage multiple projects within a single conversation.
+* All Github repositories should be owned by the same individual/organization to allow the use of a single API key.
+* Only some members of the team should be allowed to give authorization for assigning issues to other individuals.
+
 
 ### Design Patterns
 
