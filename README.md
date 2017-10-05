@@ -9,3 +9,4 @@ Team Members:
 * Timothy Dement (tmdement)
 
 ## [1. Design Milestone](DESIGN.md)
+## [2. Bot Milestone](BOT.md)
