@@ -10,7 +10,7 @@ var controller = Botkit.slackbot({
 
 // connect the bot to a stream of messages
 controller.spawn({
-  token: process.env.SLACKTOKEN,
+  token: process.env.SLACK_TOKEN,
 }).startRTM()
 
 // give the bot something to listen for.
@@ -21,3 +21,12 @@ controller.hears('[\s\S]*',['mention', 'direct_mention','direct_message'], funct
   bot.reply(message, message.text);
 });
 
+/**
+ * Selenium testing for presence of bot
+ * TODO: pull out all selenium tests into their own module
+ */
+controller.hears('hello world, from Selenium',['mention', 'direct_mention','direct_message', 'ambient'], function(bot,message) 
+{
+  console.log(message);
+  bot.reply(message, message.text);
+});
