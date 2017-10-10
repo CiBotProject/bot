@@ -6,14 +6,24 @@ This file tracks the work for each week in the iteration.
 
 | Deliverable   | Item/Status   |  Issues/Tasks
 | ------------- | ------------  |  ------------
-| Use Case      | Get Meeting Availability          | &nbsp;
-| Subflow      | 1             |  #33, #38, #78
-| Subflow      | 2             |  [Pivotal Task](https://www.pivotaltracker.com/story/show/114636091)
-| Subflow      | 3             |  [Trello Card](https://trello.com/c/diA1DaMw)
-| Subflow      | &nbsp;        | &nbsp;
+| N/A      | Setting up the development environment         | [Selenium scripting](https://www.pivotaltracker.com/story/show/151828818)
+| Use Case      | Configuring .yml files         | &nbsp;
+| Subflow      | S1             |  &nbsp;
+| Subflow      | S2             |  &nbsp;
+| Subflow      | S3             |  &nbsp;
+| Errorflow    | E1             |  &nbsp;
 | Selenium Tests| Incomplete    | Get Meeting Availability, error1,...
-
-* Github issues in a markdown referred to as `#33` will automatically turn into links when in same repo.
-* You can link to trello cards by click on share inside a card to get a link.
-* You can link to pivotal stories by clicking on the first button left of ID in detail view.
-* You reuse the markdown of the above table for your worksheet.
+| Use Case      | Creating issues if build fails         | &nbsp;
+| Subflow      | S1             |  &nbsp;
+| Subflow      | S2             |  &nbsp;
+| Subflow      | S3             |  &nbsp;
+| Errorflow    | E1             |  &nbsp;
+| Errorflow    | E2             |  &nbsp;
+| Selenium Tests| Incomplete    | Get Meeting Availability, error1,...
+| Use Case      | Code coverage notifications        | &nbsp;
+| Subflow      | S1             |  &nbsp;
+| Subflow      | S2             |  &nbsp;
+| Subflow      | S3             |  &nbsp;
+| Subflow      | S4             |  &nbsp;
+| Errorflow    | E1             |  &nbsp;
+| Selenium Tests| Incomplete    | Get Meeting Availability, error1,...
