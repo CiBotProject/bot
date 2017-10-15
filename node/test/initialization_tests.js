@@ -99,7 +99,7 @@ describe('#has_coveralls_yaml', function()
 
 describe('#create_coveralls_yaml', function()
 {
-
+    
 });
 
 describe('#update_coveralls_yaml', function()
