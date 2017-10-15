@@ -10,44 +10,16 @@
             {"name": "README.md"}
         ]
     ],
-    "repo_list":
-    [
-        {
-            "name": "repo_with_travis_yaml",
-            "contents":
-            [
-                {"name": "README.md"},
-                {"name": ".travis.yml"}
-            ]
-        },
-        {
-            "name": "repo_without_travis_yaml",
-            "contents":
-            [
-                {"name": "README.md"}
-            ]
-        },
-        {
-            "name": "repo_with_coveralls_yaml",
-            "contents":
-            [
-                {"name": "README.md"},
-                {"name": ".coveralls.yml"}
-            ]
-        },
-        {
-            "name": "repo_without_coveralls_yaml",
-            "contents":
-            [
-                {"name": "README.md"}
-            ]
-        }
-    ],
 
     "create_travis_file":{},
+
     "update_travis_file":{},
+
     "delete_travis_file":{},
+
     "new_coveralls_file":{},
+
     "update_coveralls_file":{},
+    
     "delete_coveralls_file":{}
 }

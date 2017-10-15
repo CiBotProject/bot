@@ -12,7 +12,11 @@ var expect = chai.expect;
 
 var githb_module = require('../modules/github_module.js');
 
-// For open source projects tested on travis-ci.org, use https://api.travis-ci.org.
+//////////////////////////
+//                      //
+//    TRAVIS METHODS    //
+//                      //
+//////////////////////////
 
 // MAYBE - Define a method to activate Travis CI on a repo.
 function activate_travis(owner, repo)
@@ -38,25 +42,28 @@ function has_travis_yaml(owner, repo)
 }
 
 // Define a method to create Travis CI file.
-function create_travis_yaml(owner, repo, options)
+function create_travis_yaml(owner, repo, content)
 {
-    // PUT /repos/:owner/:repo/contents/:path
-
+    
 }
 
 // Define a method to update Travis CI file.
-function update_travis_yaml(owner, repo, options)
+function update_travis_yaml(owner, repo, content)
 {
-    // PUT /repos/:owner/:repo/contents/:path
-
+    
 }
 
 // Define a method to delete Travis CI file.
 function delete_travis_yaml(owner, repo)
 {
-    // DELETE /repos/:owner/:repo/contents/:path
-
+    
 }
+
+/////////////////////////////
+//                         //
+//    COVERALLS METHODS    //
+//                         //
+/////////////////////////////
 
 // MAYBE - Define a method to activate Coveralls on a repo.
 function activate_coveralls(owner, repo)
@@ -67,29 +74,36 @@ function activate_coveralls(owner, repo)
 // Define a method to check for Coveralls file.
 function has_coveralls_yaml(owner, repo)
 {
-    // GET /repos/:owner/:repo/contents/:path
-
+    return new Promise(function(resolve, reject)
+    {
+        githb_module.get_repo_contents(owner, repo).then(function(contents)
+        {
+            var file_names = _.pluck(contents, 'name');
+            
+            if(_.contains(file_names, '.coveralls.yml'))
+                resolve(true);
+            else
+                resolve(false);
+        });
+    });
 }
 
 // Define a method to create Coveralls file.
 function create_coveralls_yaml(owner, repo, options)
 {
-    // PUT /repos/:owner/:repo/contents/:path
-
+    
 }
 
 // Define a method to update Coveralls file.
 function update_coveralls_yaml(owner, repo, options)
 {
-    // PUT /repos/:owner/:repo/contents/:path
-
+    
 }
 
 // Define a method to delete Coveralls file.
 function delete_coveralls_yaml(owner, repo)
 {
-    // DELETE /repos/:owner/:repo/contents/:path
-
+    
 }
 
 // Export methods for external use.

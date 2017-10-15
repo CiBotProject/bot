@@ -10,15 +10,13 @@ var request = require('request');
 
 var expect = chai.expect;
 
-// TAKE TOKEN OUT
-
 var token = 'token ' + 'YOUR_TOKEN';
 var github_url_root = 'https://api.github.com'
 
 // GET /repos/:owner/:repo/contents/:path
+// Status: 200 OK
 // May return a single object if :path refers to a file.
 // May return an array of objects if :path refers to a directory.
-
 function get_repo_contents(owner, repo)
 {
     var options = {
@@ -42,4 +40,40 @@ function get_repo_contents(owner, repo)
     });
 }
 
+// GET /repos/:owner/:repo/contents/.travis.yml
+// Status: 200 OK
+// The SHA of the existing .travis.yml or .coveralls.yml file is needed to update or delete.
+function get_yaml_sha(owner, repo, yaml_type)
+{
+
+}
+
+// PUT /repos/:owner/:repo/contents/:path
+// Status: 201 Created
+// The parameters 'path', 'message', and 'content' are required.
+function create_repo_contents(owner, repo, content, yaml_type)
+{
+
+}
+
+// PUT /repos/:owner/:repo/contents/:path
+// Status: 200 Created
+// The parameters 'path', 'message', 'content', and 'sha' are required.
+function update_repo_contents(owner, repo, content, yaml_type)
+{
+
+}
+
+// DELETE /repos/:owner/:repo/contents/:path
+// Status: 200 OK
+// The parameters 'path', 'message', and 'sha' are required.
+function delete_repo_contents(owner, repo, yaml_type)
+{
+
+}
+
+// Export methods for external use.
 exports.get_repo_contents = get_repo_contents;
+exports.create_repo_contents = create_repo_contents;
+exports.update_repo_contents = update_repo_contents;
+exports.delete_repo_contents = delete_repo_contents;
