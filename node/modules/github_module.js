@@ -10,6 +10,8 @@ var request = require('request');
 
 var expect = chai.expect;
 
+var init_module = require('../modules/initialization_module.js');
+
 var token = 'token ' + 'YOUR_TOKEN';
 var github_url_root = 'https://api.github.com'
 
@@ -20,7 +22,7 @@ var github_url_root = 'https://api.github.com'
 function get_repo_contents(owner, repo)
 {
     var options = {
-        url: github_url_root + '/repos/' + owner + '/' + repo + '/contents',
+        url: `${github_url_root}/repos/${owner}/${repo}/contents`,
         method: 'GET',
         headers:
         {
@@ -43,15 +45,34 @@ function get_repo_contents(owner, repo)
 // GET /repos/:owner/:repo/contents/.travis.yml
 // Status: 200 OK
 // The SHA of the existing .travis.yml or .coveralls.yml file is needed to update or delete.
-function get_yaml_sha(owner, repo, yaml_type)
+function get_yaml_sha(owner, repo, yaml_file)
 {
+    var options = {
+        url: `${github_url_root}/repos/${owner}/${repo}/contents/${yaml_file}`,
+        method: 'GET',
+        headers:
+        {
+            'User-Agent': 'get_yaml_sha',
+            'Content-Type': 'application/json',
+            'Authorization': token
+        }
+    };
 
+    return new Promise(function(resolve, reject)
+    {
+        request(options, function(error, response, body)
+        {
+            var contents = JSON.parse(body);
+            var sha = contents.sha.toString();
+            resolve(sha);
+        });
+    });
 }
 
 // PUT /repos/:owner/:repo/contents/:path
 // Status: 201 Created
 // The parameters 'path', 'message', and 'content' are required.
-function create_repo_contents(owner, repo, content, yaml_type)
+function create_repo_contents(owner, repo, content, yaml_file)
 {
 
 }
@@ -59,7 +80,7 @@ function create_repo_contents(owner, repo, content, yaml_type)
 // PUT /repos/:owner/:repo/contents/:path
 // Status: 200 Created
 // The parameters 'path', 'message', 'content', and 'sha' are required.
-function update_repo_contents(owner, repo, content, yaml_type)
+function update_repo_contents(owner, repo, content, yaml_file)
 {
 
 }
@@ -67,7 +88,7 @@ function update_repo_contents(owner, repo, content, yaml_type)
 // DELETE /repos/:owner/:repo/contents/:path
 // Status: 200 OK
 // The parameters 'path', 'message', and 'sha' are required.
-function delete_repo_contents(owner, repo, yaml_type)
+function delete_repo_contents(owner, repo, yaml_file)
 {
 
 }
