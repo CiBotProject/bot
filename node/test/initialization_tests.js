@@ -25,7 +25,7 @@ describe('#has_travis_yaml', function()
 
     var with_yamls = nock('https://api.github.com')
     .get('/repos/testuser/Hello-World/contents')
-    .reply(200, JSON.stringify(init_data.contents_list[0]));
+    .reply(200, JSON.stringify(init_data.contents_with_yamls));
 
     it('should return true if a repo has a .travis.yml file', function()
     {
@@ -37,7 +37,7 @@ describe('#has_travis_yaml', function()
 
     var without_yamls = nock('https://api.github.com')
     .get('/repos/testuser/Hello-World/contents')
-    .reply(200, JSON.stringify(init_data.contents_list[1]));
+    .reply(200, JSON.stringify(init_data.contents_without_yamls));
 
     it('should return false if a repo does not have .travis.yml file', function()
     {
@@ -50,7 +50,19 @@ describe('#has_travis_yaml', function()
 
 describe('#create_travis_yaml', function()
 {
+    var new_travis_yaml = nock('https://api.github.com')
+    .put('/repos/testuser/Hello-World/contents/.travis.yml')
+    .reply(201, JSON.stringify(init_data.create_travis_file_response));
 
+    it('should have name as ".travis.yml" and path as ".travis.yml" and "message" as "[CiBot] Create .travis.yml"', function()
+    {
+        return init_module.create_travis_yaml('testuser', 'Hello-World', 'Test content').then(function(results)
+        {
+            expect(results.content.name).to.equal('.travis.yml');
+            expect(results.content.path).to.equal('.travis.yml');
+            expect(results.commit.message).to.equal('[CiBot] Create .travis.yml');
+        });
+    });
 });
 
 describe('#update_travis_yaml', function()
@@ -74,7 +86,7 @@ describe('#has_coveralls_yaml', function()
 
     var with_yamls = nock('https://api.github.com')
     .get('/repos/testuser/Hello-World/contents')
-    .reply(200, JSON.stringify(init_data.contents_list[0]));
+    .reply(200, JSON.stringify(init_data.contents_with_yamls));
 
     it('should return true if a repo has a .coveralls.yaml file', function()
     {
@@ -86,7 +98,7 @@ describe('#has_coveralls_yaml', function()
 
     var without_yamls = nock('https://api.github.com')
     .get('/repos/testuser/Hello-World/contents')
-    .reply(200, JSON.stringify(init_data.contents_list[1]));
+    .reply(200, JSON.stringify(init_data.contents_without_yamls));
 
     it('should return false if a repo does not have a .coveralls.yaml file', function()
     {
@@ -99,7 +111,7 @@ describe('#has_coveralls_yaml', function()
 
 describe('#create_coveralls_yaml', function()
 {
-    
+
 });
 
 describe('#update_coveralls_yaml', function()

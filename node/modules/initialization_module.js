@@ -10,7 +10,7 @@ var request = require('request');
 
 var expect = chai.expect;
 
-var githb_module = require('../modules/github_module.js');
+var github_module = require('../modules/github_module.js');
 
 //////////////////////////
 //                      //
@@ -29,7 +29,7 @@ function has_travis_yaml(owner, repo)
 {
     return new Promise(function(resolve, reject)
     {
-        githb_module.get_repo_contents(owner, repo).then(function(contents)
+        github_module.get_repo_contents(owner, repo).then(function(contents)
         {
             var file_names = _.pluck(contents, 'name');
             
@@ -44,7 +44,13 @@ function has_travis_yaml(owner, repo)
 // Define a method to create Travis CI file.
 function create_travis_yaml(owner, repo, content)
 {
-    
+    return new Promise(function(resolve, reject)
+    {
+        github_module.create_repo_contents(owner, repo, content, '.travis.yml').then(function(contents)
+        {
+            resolve(contents);
+        });
+    });
 }
 
 // Define a method to update Travis CI file.
@@ -76,7 +82,7 @@ function has_coveralls_yaml(owner, repo)
 {
     return new Promise(function(resolve, reject)
     {
-        githb_module.get_repo_contents(owner, repo).then(function(contents)
+        github_module.get_repo_contents(owner, repo).then(function(contents)
         {
             var file_names = _.pluck(contents, 'name');
             
