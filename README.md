@@ -11,4 +11,4 @@ Team Members:
 This repo only contains the files for the bot implementation. To see the documentation files,
 please visit the documentation repo by visiting the following link:
 
-## [Documentation repo](https://github.com/CiBotProject/bot-docs)
+## [Documentation repo](https://github.ncsu.edu/CiBot/bot-docs/)
