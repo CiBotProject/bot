@@ -1,14 +1,17 @@
 {
   "name": "slackbot",
   "version": "1.0.0",
-  "description": "",
+  "description": "A slackbot to integrate several CI tools into a channel",
   "main": "bot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Timothy Dement <tmdement@ncsu.edu>; Samuel Gonsalves <sgonsal@ncsu.edu>; Igibek Koishybayev <ikoishy@ncsu.edu>; Andrew McNamara <ajmcnama@ncsu.edu>; Sourabh Saha <sssaha2@ncsu.edu>",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.4.6",
+    "request": "^2.75.0",
+    "underscore": "^1.8.3",
     "botkit": "^0.5.8",
     "coveralls": "^3.0.0",
     "slackbots": "^0.5.1",
