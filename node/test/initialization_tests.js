@@ -51,21 +51,36 @@ describe('#has_travis_yaml', function()
 describe('#create_travis_yaml', function()
 {
     var new_travis_yaml = nock('https://api.github.com')
+    .persist()
     .put('/repos/testuser/Hello-World/contents/.travis.yml')
     .reply(201, JSON.stringify(init_data.create_travis_file_response));
 
-    it('should have name as ".travis.yml" and path as ".travis.yml" and "message" as "[CiBot] Create .travis.yml"', function()
+    it('should have name ".travis.yml"', function()
     {
         return init_module.create_travis_yaml('testuser', 'Hello-World', 'Test content').then(function(results)
         {
             expect(results.content.name).to.equal('.travis.yml');
+        });
+    });
+
+    it('should have path ".travis.yml"', function()
+    {
+        return init_module.create_travis_yaml('testuser', 'Hello-World', 'Test content').then(function(results)
+        {
             expect(results.content.path).to.equal('.travis.yml');
+        });
+    });
+
+    it('should have message "[CiBot] Create .travis.yml"', function()
+    {
+        return init_module.create_travis_yaml('testuser', 'Hello-World', 'Test content').then(function(results)
+        {
             expect(results.commit.message).to.equal('[CiBot] Create .travis.yml');
         });
     });
 });
 
-describe('#update_travis_yaml', function()
+describe('#reset_travis_yaml', function()
 {
 
 });
@@ -111,10 +126,37 @@ describe('#has_coveralls_yaml', function()
 
 describe('#create_coveralls_yaml', function()
 {
+    var new_coveralls_yaml = nock('https://api.github.com')
+    .persist()
+    .put('/repos/testuser/Hello-World/contents/.coveralls.yml')
+    .reply(201, JSON.stringify(init_data.create_coveralls_file_response));
 
+    it('should have name ".coveralls.yml"', function()
+    {
+        return init_module.create_coveralls_yaml('testuser', 'Hello-World', 'Test content').then(function(results)
+        {
+            expect(results.content.name).to.equal('.coveralls.yml');
+        });
+    });
+
+    it('should have path ".coveralls.yml"', function()
+    {
+        return init_module.create_coveralls_yaml('testuser', 'Hello-World', 'Test content').then(function(results)
+        {
+            expect(results.content.path).to.equal('.coveralls.yml');
+        });
+    });
+
+    it('should have message "[CiBot] Create .coveralls.yml', function()
+    {
+        return init_module.create_coveralls_yaml('testuser', 'Hello-World', 'Test content').then(function(results)
+        {
+            expect(results.commit.message).to.equal('[CiBot] Create .coveralls.yml');
+        });
+    });
 });
 
-describe('#update_coveralls_yaml', function()
+describe('#reset_coveralls_yaml', function()
 {
 
 });
@@ -123,3 +165,5 @@ describe('#delete_coveralls_yaml', function()
 {
 
 });
+
+console.log(init_data.create_coveralls_file_response);

@@ -28,7 +28,7 @@ function get_repo_contents(owner, repo)
         headers:
         {
             'User-Agent': 'get_repo_contents',
-            'Content-Type': 'applicaiton/json',
+            'Content-Type': 'application/json',
             'Authorization': token
         }
     };
@@ -106,9 +106,36 @@ function create_repo_contents(owner, repo, content, file)
 // PUT /repos/:owner/:repo/contents/:path
 // Status: 200 Created
 // The parameters 'path', 'message', 'content', and 'sha' are required.
-function update_repo_contents(owner, repo, content, file)
+function reset_repo_contents(owner, repo, content, file)
 {
+    get_yaml_sha(owner, repo, file).then(function(data)
+    {
+        var options =
+        {
+            url: `${github_url_root}/repos/${owner}/${repo}/contents/${file}`,
+            method: 'PUT',
+            headers:
+            {
+                'User-Agent': 'reset_repo_contents',
+                'Content-Type': 'application/json',
+                'Authorization': token
+            },
+            json:
+            {
+                'message': `[CiBot] Reset ${file}`,
+                'content': `${init_module.encode_base64(content)}`,
+                'sha': `${data}`
+            }
+        };
 
+        return new Promise(function(resolve, reject)
+        {
+            request(options, function(error, response, body)
+            {
+                resolve(body);
+            });
+        });
+    });
 }
 
 // DELETE /repos/:owner/:repo/contents/:path
@@ -122,5 +149,5 @@ function delete_repo_contents(owner, repo, file)
 // Export methods for external use.
 exports.get_repo_contents = get_repo_contents;
 exports.create_repo_contents = create_repo_contents;
-exports.update_repo_contents = update_repo_contents;
+exports.reset_repo_contents = reset_repo_contents;
 exports.delete_repo_contents = delete_repo_contents;

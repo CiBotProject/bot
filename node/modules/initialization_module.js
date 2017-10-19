@@ -42,19 +42,19 @@ function has_travis_yaml(owner, repo)
 }
 
 // Define a method to create Travis CI file.
-function create_travis_yaml(owner, repo, content)
+function create_travis_yaml(owner, repo, file_content)
 {
     return new Promise(function(resolve, reject)
     {
-        github_module.create_repo_contents(owner, repo, content, '.travis.yml').then(function(contents)
+        github_module.create_repo_contents(owner, repo, file_content, '.travis.yml').then(function(contents)
         {
             resolve(contents);
         });
     });
 }
 
-// Define a method to update Travis CI file.
-function update_travis_yaml(owner, repo, content)
+// Define a method to reset Travis CI file.
+function reset_travis_yaml(owner, repo, file_content)
 {
     
 }
@@ -95,13 +95,20 @@ function has_coveralls_yaml(owner, repo)
 }
 
 // Define a method to create Coveralls file.
-function create_coveralls_yaml(owner, repo, options)
+function create_coveralls_yaml(owner, repo, file_content)
 {
-    
+    return new Promise(function(resolve, reject)
+    {
+        github_module.create_repo_contents(owner, repo, file_content, '.coveralls.yml').then(function(contents)
+        {
+            resolve(contents);
+        });
+    })
+
 }
 
-// Define a method to update Coveralls file.
-function update_coveralls_yaml(owner, repo, options)
+// Define a method to reset Coveralls file.
+function reset_coveralls_yaml(owner, repo, file_content)
 {
     
 }
@@ -132,13 +139,13 @@ function decode_base64(encoded_content)
 exports.activate_travis = activate_travis;
 exports.has_travis_yaml = has_travis_yaml;
 exports.create_travis_yaml = create_travis_yaml;
-exports.update_travis_yaml = update_travis_yaml;
+exports.reset_travis_yaml = reset_travis_yaml;
 exports.delete_travis_yaml = delete_travis_yaml;
 
 exports.activate_coveralls = activate_coveralls;
 exports.has_coveralls_yaml = has_coveralls_yaml;
 exports.create_coveralls_yaml = create_coveralls_yaml;
-exports.update_coveralls_yaml = update_coveralls_yaml;
+exports.reset_coveralls_yaml = reset_coveralls_yaml;
 exports.delete_coveralls_yaml = delete_coveralls_yaml;
 
 exports.encode_base64 = encode_base64;
