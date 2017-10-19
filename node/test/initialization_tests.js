@@ -165,5 +165,3 @@ describe('#delete_coveralls_yaml', function()
 {
 
 });
-
-console.log(init_data.create_coveralls_file_response);
