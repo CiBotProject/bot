@@ -1,4 +1,5 @@
 # NODE PART
+.vscode
 # Logs
 logs
 *.log
