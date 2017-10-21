@@ -40,6 +40,9 @@
   "scripts": {
     "test": "mocha"
   },
+
+  "author": "Timothy Dement <tmdement@ncsu.edu>; Samuel Gonsalves <sgonsal@ncsu.edu>; Igibek Koishybayev <ikoishy@ncsu.edu>; Andrew McNamara <ajmcnama@ncsu.edu>; Sourabh Saha <sssaha2@ncsu.edu>",
+  "license": "ISC",
   "dependencies": {
     "async": "^2.5.0",
     "bluebird": "^3.5.1",
