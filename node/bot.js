@@ -1,5 +1,6 @@
 
 var Botkit = require('botkit');
+var Coveralls = require('./modules/coveralls');
 //var childProcess = require("child_process");
 
 var controller = Botkit.slackbot({
@@ -9,7 +10,12 @@ var controller = Botkit.slackbot({
 });
 
 var repoName = null;
-var coverageThreshold = 0;
+
+var globals = {
+  coverageMap:{},//channel:threshold amount
+  repoMap:{},//channel:repo name
+  defaultThreshold:90,
+};
 
 // connect the bot to a stream of messages
 controller.spawn({
@@ -20,6 +26,7 @@ controller.spawn({
 controller.hears(['init'],['direct_message','direct_mention','mention'],function(bot,message){
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('init');
+
   if(messageArray.indexOf('help')===-1){
     //repo name has to be word after init
     if((index+1)<messageArray.length)
@@ -28,6 +35,11 @@ controller.hears(['init'],['direct_message','direct_mention','mention'],function
     if(repoName!==null){
       bot.startConversation(message,function(err,convo){
         convo.say("I am initializing the repository...");
+        //add entry of channel_name:repo_name to the repoMap
+        globals.repoMap[message.channel]=repoName;
+        //create default coverageMap entry
+        globals.coverageMap[message.channel]=globals.defaultThreshold;
+
         convo.ask('Would you like to create a yaml file as well?',[
           {
             pattern:bot.utterances.yes,
@@ -109,31 +121,7 @@ controller.hears(['configure'],['direct_message','direct_mention','mention'],fun
 });
 //testing issue creation
 controller.hears(['test issue'],['direct_message','direct_mention','mention'],function(bot,message){
-  bot.startConversation(message,function(err,convo){
-    convo.ask('Please enter the title of the issue',function(response,convo){
-      if(response!==null && response.text!==""){
-          convo.setVar('issueName',response.text);
-          convo.next();
-      }else{
-        convo.repeat();
-        convo.next();
-      }
-    });
-
-    convo.ask('Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...',function(response,convo){
-      if(response!==null && response.text!==""){
-        var assigneeList = response.text.split(',');
-        convo.setVar('assigneeList',assigneeList);
-        convo.next();
-        var listOutput = response.text;
-        convo.say("I am going to create an issue titled '{{vars.issueName}}' and assign it to "+listOutput);
-
-      }else{
-        convo.repeat();
-        convo.next();
-      }
-    });
-  });
+  issueCreationConversation(bot,message);
 });
 //testing Travis
 controller.hears(['test travis','test Travis'],['direct_message','direct_mention','mention'],function(bot,message){
@@ -142,7 +130,11 @@ controller.hears(['test travis','test Travis'],['direct_message','direct_mention
 
 //testing Coveralls
 controller.hears(['test coveralls','test Coveralls'],['direct_message','direct_mention','mention'],function(bot,message){
-  bot.reply(message,"Testing coveralls");
+  var coverage = Coveralls.getCoverageInfo("123",globals.coverageMap[message.channel]);
+  bot.reply(message,coverage.message);
+  if(coverage.status==='failure'){
+    issueCreationConversation(bot,message,`Coverage ${coverage.data.body.coverage_change} percent below ${globals.coverageMap[message.channel]}`);
+  }
 });
 
 //testing Coveralls
@@ -153,8 +145,8 @@ controller.hears(['set coverage threshold','set threshold'],['direct_message','d
 
   //repo name has to be word after init
   if((index+1)<messageArray.length){
-      coverageThreshold = parseInt(messageArray[index+1]);
-      bot.reply(message,"The coverage threshold has been set to "+coverageThreshold);
+      globals.coverageMap[message.channel] = parseInt(messageArray[index+1]);
+      bot.reply(message,"The coverage threshold has been set to "+globals.coverageMap[message.channel]);
   }
   else{
       bot.reply(message,"Please provide the coverage threshold. Ex set coverage threshold to <number>");
@@ -208,4 +200,34 @@ function initializeRepository(bot,message,repoName,framework){
   setTimeout(function(){
     bot.reply(message,"Done");
   },7000);
+}
+
+function issueCreationConversation(bot,message,issueTitle){
+
+  bot.startConversation(message,function(err,convo){
+    if(!issueTitle)
+      convo.ask('Please enter the title of the issue',function(response,convo){
+        if(response!==null && response.text!==""){
+            convo.setVar('issueName',response.text);
+            convo.next();
+        }else{
+          convo.repeat();
+          convo.next();
+        }
+      });
+
+    convo.ask('Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...',function(response,convo){
+      if(response!==null && response.text!==""){
+        var assigneeList = response.text.split(',');
+        convo.setVar('assigneeList',assigneeList);
+        convo.next();
+        var listOutput = response.text;
+        convo.say("I am going to create an issue titled *_{{vars.issueName}}_* and assign it to "+listOutput);
+        console.log(listOutput);
+      }else{
+        convo.repeat();
+        convo.next();
+      }
+    });
+  });
 }

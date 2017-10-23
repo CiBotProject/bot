@@ -8,7 +8,7 @@ var _ = require("underscore");
 
 var data = require("../modules/mocks/coverallsMock.json");
 
-function getCoverageInfo(commitSHA)
+exports.getCoverageInfo = function(commitSHA)
 {
 	var mockCoverallsService = nock("https://coveralls.io")
 			.get("/builds/" + commitSHA + ".json")
@@ -18,9 +18,9 @@ function getCoverageInfo(commitSHA)
 		"committer_name": data.committer_name,
 		"created_at": data.created_at,
 		"covered_percent": data.covered_percent,
-		"coverage_change": data.coverage_change 	
+		"coverage_change": data.coverage_change
 	};
-	
+
 	return(coverageInfo);
 }
 
@@ -46,7 +46,7 @@ function getCoverageInfo(commitSHA)
 
 /*
 
-Calling format: 
+Calling format:
 
 getCoverageInfo("27ea21edef73652eb1e72bd9942eea15c1fe4955").then(function(results){
 	console.log("Covered Percent: " + results.covered_percent);
