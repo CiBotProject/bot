@@ -41,7 +41,8 @@ function init(owner, repo){
     travis.hooks.get(function(err, res){
         //todo: find specified reponame
         var activateHook = nock("https://api.travis-ci.org")
-            .put("/hooks/1", {hook:{active:true}});
+            .put("/hooks/1", {hook:{active:true}})
+            .reply(200, "success");
 
         travis.hooks(1).put({hook:{active:true}});
     });
@@ -58,10 +59,15 @@ function init(owner, repo){
  * @param {String} technology 
  */
 function config(technology){
-    response = {
-        status: 200,
+    let response = {
+        status: constant.constants.SUCCESS,
         message: `The yaml file for ${technology}`,
-        body: "yaml file content"
+        body: { 
+                "language": "node_js", 
+                "node_js": [ 
+                    "0.10.1" 
+                ]
+            }
     }
 
     return response;
@@ -74,9 +80,10 @@ function listTech(){
     let techs = [];
     techs.push("Node.js");
     techs.push("Ruby");
-    response["status"] = 200;
-    response["message"] = "The list of supported technologies";
-    response["body"] = techs;
+    let response = constant.constants.message;
+    response.status = constant.constants.SUCCESS;
+    response.message = "The list of supported technologies";
+    response.body = techs;
 
     return response;
 }
@@ -94,12 +101,13 @@ function lastBuild(owner, reponame){
 
     travis.repos(owner, repo).get(function(err, res){
         var requestStatus = nock("https://api.travis-ci.org")
-            .get(`/requests?repository_id=${res.repo.id}`)
+            .get(`/requests`)
+            .query({repository_id: res.repo.id})
             .reply(200, JSON.stringify(data.show_request));
         
     })
     
-    response = {
+    let response = {
         status: constant.constants.SUCCESS,
         message: `The last build for ${repo} was successful`,
         body: ""
@@ -137,7 +145,7 @@ function listAccounts(){
     response.status = constant.constants.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = accounts;
-    
+
     return response;
 }
 
