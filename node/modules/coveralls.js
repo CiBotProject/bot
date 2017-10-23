@@ -4,11 +4,11 @@ var expect = chai.expect;
 var request = require("request");
 var nock = require("nock");
 var _ = require("underscore");
-
+var constant = require("../modules/constants");
 
 var data = require("../modules/mocks/coverallsMock.json");
 
-exports.getCoverageInfo = function(commitSHA)
+exports.getCoverageInfo = function(commitSHA, coverageThreshold)
 {
 	var mockCoverallsService = nock("https://coveralls.io")
 			.get("/builds/" + commitSHA + ".json")
@@ -21,14 +21,37 @@ exports.getCoverageInfo = function(commitSHA)
 		"coverage_change": data.coverage_change
 	};
 
-	return(coverageInfo);
+	if(coverageInfo.covered_percent < coverageThreshold)
+	{
+			var message = {
+				"status": constant.FAILURE,
+				"message": "Current coverage (" + coverageInfo.covered_percent + "%) is below threshold (" + coverageThreshold + "%)",
+				"data": {
+						"body": coverageInfo,
+						"blame": coverageInfo.committer_name
+				}
+		};
+		return(message);
+	}
+	else
+	{
+			var message = {
+				"status": constant.SUCCESS,
+				"message": "Current coverage is ("+ coverageInfo.covered_percent + "%)",
+				"data": {
+						"body": coverageInfo,
+						"blame": coverageInfo.committer_name
+				}
+		};
+		return(message);
+	}
 }
 
 /*
 
 Actual SERVICE code:
 
-function getCoverageInfo(commitSHA)
+exports.getCoverageInfo = function(commitSHA)
 {
 	return new Promise(function(resolve, reject){
 		var urlRoot = "https://coveralls.io/builds/" + commitSHA + ".json";

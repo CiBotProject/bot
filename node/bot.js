@@ -130,11 +130,16 @@ controller.hears(['test travis','test Travis'],['direct_message','direct_mention
 
 //testing Coveralls
 controller.hears(['test coveralls','test Coveralls'],['direct_message','direct_mention','mention'],function(bot,message){
+
   var coverage = Coveralls.getCoverageInfo("123",globals.coverageMap[message.channel]);
+
   bot.reply(message,coverage.message);
+
   if(coverage.status==='failure'){
-    issueCreationConversation(bot,message,`Coverage ${coverage.data.body.coverage_change} percent below ${globals.coverageMap[message.channel]}`);
+    var coverageBelowThreshold = globals.coverageMap[message.channel] - coverage.data.body.covered_percent;
+    issueCreationConversation(bot,message,`Coverage ${coverageBelowThreshold} percent below threshold`);
   }
+
 });
 
 //testing Coveralls
@@ -205,7 +210,7 @@ function initializeRepository(bot,message,repoName,framework){
 function issueCreationConversation(bot,message,issueTitle){
 
   bot.startConversation(message,function(err,convo){
-    if(!issueTitle)
+    if(!issueTitle){
       convo.ask('Please enter the title of the issue',function(response,convo){
         if(response!==null && response.text!==""){
             convo.setVar('issueName',response.text);
@@ -215,7 +220,26 @@ function issueCreationConversation(bot,message,issueTitle){
           convo.next();
         }
       });
-
+    }
+    else{
+      convo.ask('Current issue title is set to *_'+issueTitle+'_*.Do you want to change the title of the issue (yes/no)?',function(response,convo){
+        if(response==='yes'){
+          convo.ask('Please enter the title of the issue',function(response,convo){
+            if(response!==null && response.text!==""){
+                convo.setVar('issueName',response.text);
+                convo.next();
+            }else{
+              convo.repeat();
+              convo.next();
+            }
+          });
+        }
+        else{
+          convo.setVar('issueName',issueTitle);
+          convo.next();
+        }
+      });
+    }
     convo.ask('Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...',function(response,convo){
       if(response!==null && response.text!==""){
         var assigneeList = response.text.split(',');
