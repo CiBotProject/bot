@@ -1,16 +1,34 @@
-const travis = require("travis-ci");
-const constant = require("./constants.js").constants;
+const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
+const request = require("request");
 
-let travisToken = "";
-let githubToken = process.env.GITHUB_TOKEN;
+let token = "token ";
+let githubToken = "dacf2fc16170fe47f50edb21628b0a36fcc00cd5";
+let urlRoot = "https://api.travis-ci.org";
+let message = constant.message;
+let supportedTechs = ["Node.js", "Ruby"];
+
+lastBuild("test", "test", function(data){
+    console.log(data);
+});
+//authenticate();
+// activate("test", "test", function(data){
+//     console.log(data);
+// });
+//console.log(listTech());
+//console.log(config("Ruby"));
+//console.log(config("Huskell"));
 
 function authenticate(){
-    travis.authenticate({
+    travis.auth.github.post({
         github_token: githubToken
-    }, function (err) {
-        // we've authenticated!  
+    }, function (err, res) {
+        // res => { 
+        //     access_token: XXXXXXX 
+        // } 
+        console.log(res.access_token);
+        
     });
 }
 
@@ -19,39 +37,44 @@ function authenticate(){
  * 1. synchronize Travis with Github repositories
  * 2. Activate travis CI for the specified repository with owner
  * @param {String} owner //github owner of repo
- * @param {String} repo //github repo name
+ * @param {String} reponame //github repo name
  */
-function init(owner, repo){
+function activate(owner, reponame, callback){
 
-    authenticate();
-    //todo: sync
-    var sync = nock("https://api.travis-ci.org")
-        .post("/users/sync").reply(200, {result:true});
+    //todo: first of all sync it.
 
-    travis.users.sync.post(function (err, res) {
-        // res => { 
-        //     "result": true 
-        // } 
-    });
-
-    var hooks = nock("https://api.travis-ci.org")
-        .get("/hooks")
-        .reply(200, JSON.stringify(data.list_hooks));
-
-    travis.hooks.get(function(err, res){
-        //todo: find specified reponame
-        var activateHook = nock("https://api.travis-ci.org")
-            .put("/hooks/1", {hook:{active:true}})
-            .reply(200, "success");
-
-        travis.hooks(1).put({hook:{active:true}});
-    });
-
-    let response = constant.constants.message;
-    response.status = constant.constants.SUCCESS;
-    response.message = `Travis activated for ${owner}/${reponame}`;
+    let repoNock = nock("https://api.travis-ci.org")
+        .get(`/repos/${owner}/${reponame}`)
+        .reply(200, data.get_repo);
     
-    return response;
+    let options = {
+        url: `${urlRoot}/repos/${owner}/${reponame}`,
+        method: 'GET',
+        headers:
+        {
+            'User-Agent': 'CiBot',
+            'Content-Type': 'application/json',
+            'Authorization': token
+        }
+    }
+    var resp = constant.message;
+
+    request(options, function(err, res, body){
+        let hookNock = nock(urlRoot).put("/hooks")
+            .reply(200, data.put_hook);
+        
+        options.url = `${urlRoot}/hooks`;
+        options.method = "PUT";
+        request(options, function(err, res, body){
+            
+            resp.status = constant.SUCCESS;
+            resp.message = `Travis activated for ${owner}/${reponame}`;
+            resp.data.body = body;
+            callback(resp);
+        })
+    })
+
+    
 }
 
 /**
@@ -59,31 +82,31 @@ function init(owner, repo){
  * @param {String} technology 
  */
 function config(technology){
-    let response = {
-        status: constant.constants.SUCCESS,
-        message: `The yaml file for ${technology}`,
-        body: { 
-                "language": "node_js", 
-                "node_js": [ 
-                    "0.10.1" 
-                ]
-            }
-    }
+    let resp = constant.message;
 
-    return response;
+    if(supportedTechs.indexOf(technology) < 0){
+        resp.status = constant.FAILURE;
+        resp.message = `Sorry I can't create yaml for ${technology}`;
+        resp.data = null;
+        return resp;
+    }
+    
+    resp.status = constant.SUCCESS;
+    resp.message = `The content of yaml file for ${technology}`;
+    resp.data.body = "bGFuZ3VhZ2U6IG5vZGVfanMKbm9kZV9qczoKLSAic3RhYmxlIgphZnRlcl9zdWNjZXNzOgotIG5wbSBydW4gY292ZXJhbGxz";
+
+    return resp;
 }
 
 /**
  * This function returns list of supported technologies in JSON format
  */
 function listTech(){
-    let techs = [];
-    techs.push("Node.js");
-    techs.push("Ruby");
-    let response = constant.constants.message;
-    response.status = constant.constants.SUCCESS;
+    
+    let response = constant.message;
+    response.status = constant.SUCCESS;
     response.message = "The list of supported technologies";
-    response.body = techs;
+    response.data.body = supportedTechs;
 
     return response;
 }
@@ -93,44 +116,58 @@ function listTech(){
  * @param {String} owner 
  * @param {String} repo 
  */
-function lastBuild(owner, reponame){
+function lastBuild(owner, reponame, callback){
 
-    var repo = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${reponame}`)
-        .reply(200, JSON.stringify(data.show_repo));
+    let resp = constant.message;
 
-    travis.repos(owner, repo).get(function(err, res){
-        var requestStatus = nock("https://api.travis-ci.org")
-            .get(`/requests`)
-            .query({repository_id: res.repo.id})
-            .reply(200, JSON.stringify(data.show_request));
-        
-    })
-    
-    let response = {
-        status: constant.constants.SUCCESS,
-        message: `The last build for ${repo} was successful`,
-        body: ""
-    }
-
-    return response;
-}
-
-function listBuilds(owner, reponame){
-    let builds = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${repo}/builds`)
+    let buildsNock = nock("https://api.travis-ci.org")
+        .get(`/repos/${owner}/${reponame}/builds`)
         .reply(200, JSON.stringify(data.list_builds));
 
-    travis.repos(owner, reponame).builds.get(function(err, res){
+    let options = {
+        url: `${urlRoot}/repos/${owner}/${reponame}/builds`,
+        method: 'GET',
+        headers:
+        {
+            'User-Agent': 'CiBot',
+            'Content-Type': 'application/json',
+            'Authorization': token
+        }
+    }
+    
+    request(options, function(err, res, body){
+        //console.log(body);
+        let json = JSON.parse(body);
 
+        let lastBuildId = json.builds[0].id;
+        let lastBuildState = json.builds[0].state;
+        if(lastBuildState === 'failed'){
+            json.commits.filter(function(path){
+                return path.id === json.builds[0].commit_id;
+            }).forEach(function(path){
+                resp.status = constant.FAILURE;
+                resp.message = `The last build for ${owner}/${reponame} failed`;
+                resp.data.body = path;
+                resp.data.blame.push(path.author_email); 
+                callback(resp);
+            });
+        } else if(lastBuildState === 'success'){
+            resp.status = constant.SUCCESS;
+            resp.message = `The last build for ${owner}/${reponame} succeed`;
+            callback(resp);
+        }
     });
-    let reponse = constant.constants.message;
-    response.status = constant.constants.SUCCESS;
-    response.message = `Here is the build list for ${owner}/${reponame}`;
-    response.body = builds;
-
-    return response;
 }
+
+
+module.exports.activate = activate;
+module.exports.configure = config;
+module.exports.listTech = listTech;
+module.exports.lastBuild = lastBuild;
+
+//module.exports.listBuilds = listBuilds;
+//module.exports.listAccounts = listAccounts;
+
 
 function listAccounts(){
     let accounts = nock("https://api.travis-ci.org")
@@ -141,18 +178,27 @@ function listAccounts(){
 
     });
 
-    let reponse = constant.constants.message;
-    response.status = constant.constants.SUCCESS;
+    let reponse = constant.message;
+    response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = accounts;
 
     return response;
 }
 
-module.exports.initiatilize = init;
-module.exports.configure = config;
-module.exports.listTech = listTech;
-module.exports.lastBuild = lastBuild;
 
-//module.exports.listBuilds = listBuilds;
-//module.exports.listAccounts = listAccounts;
+function listBuilds(owner, reponame){
+    let builds = nock("https://api.travis-ci.org")
+        .get(`/repos/${owner}/${repo}/builds`)
+        .reply(200, JSON.stringify(data.list_builds));
+
+    travis.repos(owner, reponame).builds.get(function(err, res){
+
+    });
+    let reponse = constant.message;
+    response.status = constant.SUCCESS;
+    response.message = `Here is the build list for ${owner}/${reponame}`;
+    response.body = builds;
+
+    return response;
+}
