@@ -25,6 +25,8 @@ import io.github.bonigarcia.wdm.ChromeDriverManager;
 public class WebTest
 {
 	private static WebDriver driver;
+	private static WebDriverWait wait;
+	private static String botName = System.getenv("SLACK_BOT_NAME");
 	
 	@BeforeClass
 	public static void setUp() throws Exception 
@@ -32,25 +34,11 @@ public class WebTest
 		//driver = new HtmlUnitDriver();
 		ChromeDriverManager.getInstance().setup();
 		driver = new ChromeDriver();
-	}
-	
-	@AfterClass
-	public static void  tearDown() throws Exception
-	{
-		driver.close();
-		driver.quit();
-	}
-
-	/**
-	 * 
-	 */
-	@Test
-	public void postMessage()
-	{
+		
 		driver.get("https://slack-cibot.slack.com/");
 
 		// Wait until page loads and we can see a sign in button.
-		WebDriverWait wait = new WebDriverWait(driver, 30);
+		wait = new WebDriverWait(driver, 30);
 		wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("signin_btn")));
 
 		// Find email and password fields.
@@ -73,45 +61,121 @@ public class WebTest
 		// Switch to #selenium-bot channel and wait for it to load.
 		driver.get("https://slack-cibot.slack.com/messages/selenium-bot");
 		wait.until(ExpectedConditions.titleContains("selenium-bot"));
-
+	}
+	
+	@AfterClass
+	public static void  tearDown() throws Exception
+	{
+		driver.close();
+		driver.quit();
+	}
+	
+	/**
+	 * 
+	 */
+	@Test
+	public void helpMessage()
+	{
+		/**
+		 * <b data-stringify-prefix="*" data-stringify-suffix="*" data-stringify-requires-siblings=""><i data-stringify-prefix="_" data-stringify-suffix="_" data-stringify-requires-siblings="">help init</i></b> or <b data-stringify-prefix="*" data-stringify-suffix="*" data-stringify-requires-siblings=""><i data-stringify-prefix="_" data-stringify-suffix="_" data-stringify-requires-siblings="">help configure</i></b> or <b data-stringify-prefix="*" data-stringify-suffix="*" data-stringify-requires-siblings=""><i data-stringify-prefix="_" data-stringify-suffix="_" data-stringify-requires-siblings="">help issue</i></b> or <b data-stringify-prefix="*" data-stringify-suffix="*" data-stringify-requires-siblings=""><i data-stringify-prefix="_" data-stringify-suffix="_" data-stringify-requires-siblings="">help travis</i></b> or <b data-stringify-prefix="*" data-stringify-suffix="*" data-stringify-requires-siblings=""><i data-stringify-prefix="_" data-stringify-suffix="_" data-stringify-requires-siblings="">help coveralls</i></b><span class="constrain_triple_clicks"></span>
+		 */
+//		String text = "";
+//		String text = "*help init* or *help configure* or *help issue* or *help travis* or *help coveralls*";
+//		String text = "<b data-stringify-prefix=\"*\" data-stringify-suffix=\"*\" data-stringify-requires-siblings=\"\"><i data-stringify-prefix=\"_\" data-stringify-suffix=\"_\" data-stringify-requires-siblings=\"\">help init</i></b> or <b data-stringify-prefix=\"*\" data-stringify-suffix=\"*\" data-stringify-requires-siblings=\"\"><i data-stringify-prefix=\"_\" data-stringify-suffix=\"_\" data-stringify-requires-siblings=\"\">help configure</i></b> or <b data-stringify-prefix=\"*\" data-stringify-suffix=\"*\" data-stringify-requires-siblings=\"\"><i data-stringify-prefix=\"_\" data-stringify-suffix=\"_\" data-stringify-requires-siblings=\"\">help issue</i></b> or <b data-stringify-prefix=\"*\" data-stringify-suffix=\"*\" data-stringify-requires-siblings=\"\"><i data-stringify-prefix=\"_\" data-stringify-suffix=\"_\" data-stringify-requires-siblings=\"\">help travis</i></b> or <b data-stringify-prefix=\"*\" data-stringify-suffix=\"*\" data-stringify-requires-siblings=\"\"><i data-stringify-prefix=\"_\" data-stringify-suffix=\"_\" data-stringify-requires-siblings=\"\">help coveralls</i></b><span class=\"constrain_triple_clicks\">";
+//		String xpathSearch = "//span[@class='message_body']";
+		String xpathSearch = "//div[@class='message_content_header_left']/a[.= '" + botName + "']";
 		// Type something
 		WebElement messageBot = driver.findElement(By.id("msg_input"));
 		assertNotNull(messageBot);
+		int numMessagesBefore = driver.findElements(By.xpath(xpathSearch)).size();
 		
 		Actions actions = new Actions(driver);
 		actions.moveToElement(messageBot);
 		actions.click();
-		actions.sendKeys("hello world, from Selenium");
+		actions.sendKeys("@" + botName + " help");
 		actions.sendKeys(Keys.RETURN);
 		actions.build().perform();
 
-		wait.withTimeout(3, TimeUnit.SECONDS).ignoring(StaleElementReferenceException.class);
+		wait.withTimeout(10, TimeUnit.SECONDS).ignoring(StaleElementReferenceException.class);
 
-		WebElement msg = driver.findElement(
-				By.xpath("//span[@class='message_body' and text() = 'hello world, from Selenium']"));
-		assertNotNull(msg);
+		int numMessagesAfter = driver.findElements(By.xpath(xpathSearch)).size();
+		System.out.println(xpathSearch);
+		System.out.println(numMessagesBefore);
+		System.out.println(numMessagesAfter);
+		assertTrue("There were no messages", numMessagesAfter > 0);
+		assertTrue("No new messages were found", numMessagesAfter > numMessagesBefore);
 	}
 	
-//	@Test
-//	public void googleExists() throws Exception
-//	{
-//		driver.get("http://www.google.com");
-//        assertEquals("Google", driver.getTitle());		
-//	}
-//	
-//
-//	@Test
-//	public void Closed() throws Exception
-//	{
-//		driver.get("http://www.checkbox.io/studies.html");
+	/**
+	 * 
+	 */
+	@Test
+	public void useCase1()
+	{
+		// Type something
+//		WebElement messageBot = driver.findElement(By.id("msg_input"));
+//		assertNotNull(messageBot);
 //		
-//		// http://geekswithblogs.net/Aligned/archive/2014/10/16/selenium-and-timing-issues.aspx
-//		WebDriverWait wait = new WebDriverWait(driver, 30);
-//		wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//a[@class='status']/span[.='CLOSED']")));
-//		List<WebElement> spans = driver.findElements(By.xpath("//a[@class='status']/span[.='CLOSED']"));
+//		Actions actions = new Actions(driver);
+//		actions.moveToElement(messageBot);
+//		actions.click();
+//		actions.sendKeys("hello world, from Selenium");
+//		actions.sendKeys(Keys.RETURN);
+//		actions.build().perform();
 //
-//		assertNotNull(spans);
-//		assertEquals(5, spans.size());
-//	}
+//		wait.withTimeout(3, TimeUnit.SECONDS).ignoring(StaleElementReferenceException.class);
+//
+//		WebElement msg = driver.findElement(
+//				By.xpath("//span[@class='message_body' and text() = 'hello world, from Selenium']"));
+//		assertNotNull(msg);
+	}
+	
+	/**
+	 * 
+	 */
+	@Test
+	public void useCase2()
+	{
+		// Type something
+//		WebElement messageBot = driver.findElement(By.id("msg_input"));
+//		assertNotNull(messageBot);
+//		
+//		Actions actions = new Actions(driver);
+//		actions.moveToElement(messageBot);
+//		actions.click();
+//		actions.sendKeys("hello world, from Selenium");
+//		actions.sendKeys(Keys.RETURN);
+//		actions.build().perform();
+//
+//		wait.withTimeout(3, TimeUnit.SECONDS).ignoring(StaleElementReferenceException.class);
+//
+//		WebElement msg = driver.findElement(
+//				By.xpath("//span[@class='message_body' and text() = 'hello world, from Selenium']"));
+//		assertNotNull(msg);
+	}
+	
+	/**
+	 * 
+	 */
+	@Test
+	public void useCase3()
+	{
+//		// Type something
+//		WebElement messageBot = driver.findElement(By.id("msg_input"));
+//		assertNotNull(messageBot);
+//		
+//		Actions actions = new Actions(driver);
+//		actions.moveToElement(messageBot);
+//		actions.click();
+//		actions.sendKeys("hello world, from Selenium");
+//		actions.sendKeys(Keys.RETURN);
+//		actions.build().perform();
+//
+//		wait.withTimeout(3, TimeUnit.SECONDS).ignoring(StaleElementReferenceException.class);
+//
+//		WebElement msg = driver.findElement(
+//				By.xpath("//span[@class='message_body' and text() = 'hello world, from Selenium']"));
+//		assertNotNull(msg);
+	}
 
 }
