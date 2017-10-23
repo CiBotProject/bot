@@ -3,8 +3,8 @@
 exports.data = {'body': '',
                 'blame': []}
 
-exports.constants.FAILURE = 'failure'
-exports.constants.SUCCESS = 'success'
-exports.constants.message = {'status': '',  // Status, either FAILURE or SUCCESS as above
+exports.FAILURE = 'failure'
+exports.SUCCESS = 'success'
+exports.message = {'status': '',  // Status, either FAILURE or SUCCESS as above
                              'message': '', // Message to send back user
                              'data': data}  // Data to pass to the next caller
