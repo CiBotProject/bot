@@ -119,22 +119,6 @@ function delete_coveralls_yaml(owner, repo)
     
 }
 
-/////////////////////////////////
-//                             //
-//    MISCELLANEOUS METHODS    //
-//                             //
-/////////////////////////////////
-
-function encode_base64(decoded_content)
-{
-    return Buffer.from(decoded_content).toString('base64');
-}
-
-function decode_base64(encoded_content)
-{
-    return Buffer.from(encoded_content, 'base64').toString();
-}
-
 // Export methods for external use.
 exports.activate_travis = activate_travis;
 exports.has_travis_yaml = has_travis_yaml;
@@ -147,6 +131,3 @@ exports.has_coveralls_yaml = has_coveralls_yaml;
 exports.create_coveralls_yaml = create_coveralls_yaml;
 exports.reset_coveralls_yaml = reset_coveralls_yaml;
 exports.delete_coveralls_yaml = delete_coveralls_yaml;
-
-exports.encode_base64 = encode_base64;
-exports.decode_base64 = decode_base64;

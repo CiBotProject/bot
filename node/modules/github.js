@@ -10,19 +10,19 @@ var request = require('request');
 
 var expect = chai.expect;
 
-var init_module = require('../modules/initialization.js');
-
 var token = 'token ' + process.env.GITHUB_TOKEN;
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
 
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
 
-// GET /repos/:owner/:repo/contents/:path
-// Status: 200 OK
-// May return a single object if :path refers to a file.
-// May return an array of objects if :path refers to a directory.
-function get_repo_contents(owner, repo)
+/**
+ * Get the contents of the root directory of a specified repository for a specified user.
+ * 
+ * @param {string} owner the name of the owner of the repository
+ * @param {string} repo  the name of the repository whose root contents will be returned
+ */
+function getRepoContents(owner, repo)
 {
     var options =
     {
@@ -30,7 +30,7 @@ function get_repo_contents(owner, repo)
         method: 'GET',
         headers:
         {
-            'User-Agent': 'get_repo_contents',
+            'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
             'Authorization': token
         }
@@ -46,10 +46,14 @@ function get_repo_contents(owner, repo)
     });
 }
 
-// GET /repos/:owner/:repo/contents/.travis.yml
-// Status: 200 OK
-// The SHA of the existing .travis.yml or .coveralls.yml file is needed to update or delete.
-function get_yaml_sha(owner, repo, file)
+/**
+ * Get the SHA of a specified file in the root directory of a specified repository for a specified user.
+ * 
+ * @param {string} owner the name of the owner of the repository
+ * @param {string} repo the name of the repository whose root directory contains the file
+ * @param {string} file the name of the file whose SHA will be returned
+ */
+function getFileSha(owner, repo, file)
 {
     var options =
     {
@@ -57,7 +61,7 @@ function get_yaml_sha(owner, repo, file)
         method: 'GET',
         headers:
         {
-            'User-Agent': 'get_yaml_sha',
+            'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
             'Authorization': token
         }
@@ -74,10 +78,17 @@ function get_yaml_sha(owner, repo, file)
     });
 }
 
-// PUT /repos/:owner/:repo/contents/:path
-// Status: 201 Created
-// The parameters 'path', 'message', and 'content' are required.
-function create_repo_contents(owner, repo, content, file)
+/**
+ * Create a specified file in the root directory of a specified repository for a specified user.
+ * 
+ * PRECONDITION: The specified file does not already exist in the root of the repository.
+ * 
+ * @param {string} owner the name of the owner of the repository
+ * @param {string} repo the name of the repository in which the file will be created
+ * @param {string} content the contents of the file that will be created
+ * @param {string} file the name of the file that will be created
+ */
+function createRepoContents(owner, repo, content, file)
 {
     var options =
     {
@@ -85,7 +96,7 @@ function create_repo_contents(owner, repo, content, file)
         method: 'PUT',
         headers:
         {
-            'User-Agent': 'create_repo_contents',
+            'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
             'Authorization': token
         },
@@ -93,7 +104,7 @@ function create_repo_contents(owner, repo, content, file)
         {
             'path': file,
             'message': `[CiBot] Create ${file}`,
-            'content': `${init_module.encode_base64(content)}`
+            'content': `${encodeBase64(content)}`
         }
     };
 
@@ -106,12 +117,19 @@ function create_repo_contents(owner, repo, content, file)
     });
 }
 
-// PUT /repos/:owner/:repo/contents/:path
-// Status: 200 Created
-// The parameters 'path', 'message', 'content', and 'sha' are required.
-function reset_repo_contents(owner, repo, content, file)
+/**
+ * Overwrite the contents of a specified file in the root directory of a specified repository for a specified user.
+ * 
+ * PRECONDITION: The file exists in the root of the repository.
+ * 
+ * @param {*} owner the name of the owner of the repository
+ * @param {*} repo the name of the repository in which the file will be reset
+ * @param {*} content the contents of the file that will overwrite the existing contents
+ * @param {*} file the name of the file that will be reset
+ */
+function resetRepoContents(owner, repo, content, file)
 {
-    get_yaml_sha(owner, repo, file).then(function(data)
+    getFileSha(owner, repo, file).then(function(data)
     {
         var options =
         {
@@ -119,14 +137,14 @@ function reset_repo_contents(owner, repo, content, file)
             method: 'PUT',
             headers:
             {
-                'User-Agent': 'reset_repo_contents',
+                'User-Agent': 'CiBot',
                 'Content-Type': 'application/json',
                 'Authorization': token
             },
             json:
             {
                 'message': `[CiBot] Reset ${file}`,
-                'content': `${init_module.encode_base64(content)}`,
+                'content': `${encodeBase64(content)}`,
                 'sha': `${data}`
             }
         };
@@ -139,14 +157,6 @@ function reset_repo_contents(owner, repo, content, file)
             });
         });
     });
-}
-
-// DELETE /repos/:owner/:repo/contents/:path
-// Status: 200 OK
-// The parameters 'path', 'message', and 'sha' are required.
-function delete_repo_contents(owner, repo, file)
-{
-
 }
 
 /**
@@ -352,12 +362,36 @@ function createGitHubIssue(repo, owner, issuePromise) {
 // var i3 = createIssueJSON('test', 'arewm', 'test-3', {'body': 'test!!', 'assignees': ['arewm', 'bubba']});
 // createGitHubIssue('test', 'arewm', i3).then(console.log);
 
+/////////////////////////////////
+//                             //
+//    MISCELLANEOUS METHODS    //
+//                             //
+/////////////////////////////////
+
+/**
+ * Encode the given parameter using base64 scheme.
+ * 
+ * @param {*} decoded_content content to encode.
+ */
+function encodeBase64(decoded_content)
+{
+    return Buffer.from(decoded_content).toString('base64');
+}
+
+/**
+ * Decode the given parameter using base64 scheme.
+ * 
+ * @param {*} encoded_content content to decode.
+ */
+function decodeBase64(encoded_content)
+{
+    return Buffer.from(encoded_content, 'base64').toString();
+}
 
 // Export methods for external use.
-exports.get_repo_contents = get_repo_contents;
-exports.create_repo_contents = create_repo_contents;
-exports.reset_repo_contents = reset_repo_contents;
-exports.delete_repo_contents = delete_repo_contents;
+exports.getRepoContents = getRepoContents;
+exports.createRepoContents = createRepoContents;
+exports.resetRepoContents = resetRepoContents;
 exports.createIssueJSON = createIssueJSON;
 exports.modifyIssueJSON = modifyIssueJSON;
 exports.createGitHubIssue = createGitHubIssue;
