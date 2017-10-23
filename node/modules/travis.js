@@ -9,9 +9,9 @@ let urlRoot = "https://api.travis-ci.org";
 let message = constant.message;
 let supportedTechs = ["Node.js", "Ruby"];
 
-lastBuild("test", "test", function(data){
-    console.log(data);
-});
+// lastBuild("test", "test", function(data){
+//     console.log(data);
+// });
 //authenticate();
 // activate("test", "test", function(data){
 //     console.log(data);
@@ -20,17 +20,6 @@ lastBuild("test", "test", function(data){
 //console.log(config("Ruby"));
 //console.log(config("Huskell"));
 
-function authenticate(){
-    travis.auth.github.post({
-        github_token: githubToken
-    }, function (err, res) {
-        // res => { 
-        //     access_token: XXXXXXX 
-        // } 
-        console.log(res.access_token);
-        
-    });
-}
 
 /**
  * This function:
@@ -81,7 +70,7 @@ function activate(owner, reponame, callback){
  * This function returns yaml file body for specified technology
  * @param {String} technology 
  */
-function config(technology){
+function createYaml(technology){
     let resp = constant.message;
 
     if(supportedTechs.indexOf(technology) < 0){
@@ -101,7 +90,7 @@ function config(technology){
 /**
  * This function returns list of supported technologies in JSON format
  */
-function listTech(){
+function listTechnologies(){
     
     let response = constant.message;
     response.status = constant.SUCCESS;
@@ -159,15 +148,10 @@ function lastBuild(owner, reponame, callback){
     });
 }
 
-
-module.exports.activate = activate;
-module.exports.configure = config;
-module.exports.listTech = listTech;
-module.exports.lastBuild = lastBuild;
-
-//module.exports.listBuilds = listBuilds;
-//module.exports.listAccounts = listAccounts;
-
+module.exports.activate = activate;//activates travis for repo. Params: owner, reponame, callback
+module.exports.lastBuild = lastBuild;//returns last build state. Params: owner, reponame, callback
+module.exports.createYaml = createYaml;//create the yaml for specified technology. Params: technology
+module.exports.listTechnologies = listTechnologies;//list supported technologies. No params.
 
 function listAccounts(){
     let accounts = nock("https://api.travis-ci.org")
@@ -201,4 +185,16 @@ function listBuilds(owner, reponame){
     response.body = builds;
 
     return response;
+}
+
+function authenticate(){
+    travis.auth.github.post({
+        github_token: githubToken
+    }, function (err, res) {
+        // res => { 
+        //     access_token: XXXXXXX 
+        // } 
+        console.log(res.access_token);
+        
+    });
 }
