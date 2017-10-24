@@ -178,17 +178,20 @@ public class WebTest
 	@Test
 	public void helpMessage()
 	{
+		// GENERAL HELP
 		testCommandOneResponse("@" + botName + " help", 
 				"help init or help configure or help issue or help travis or help coveralls");
 		
+		// USE CASE 1 HELP
 		testCommandOneResponse("@" + botName + " help init", "init <repository>");
-		
 		testCommandOneResponse("@" + botName + " help configure", "configure <repository>");
 		
 		testCommandOneResponse("@" + botName + " help issue", "test issue");
 		
+		// USE CASE 2 HELP
 		testCommandOneResponse("@" + botName + " help travis", "test travis");
 		
+		// USE CASE 3 HELP
 		testCommandOneResponse("@" + botName + " help coveralls", "test coveralls");
 	}
 	
@@ -198,22 +201,7 @@ public class WebTest
 //	@Test
 //	public void useCase1()
 //	{
-//		// Type something
-//		WebElement messageBot = driver.findElement(By.id("msg_input"));
-//		assertNotNull(messageBot);
 //		
-//		Actions actions = new Actions(driver);
-//		actions.moveToElement(messageBot);
-//		actions.click();
-//		actions.sendKeys("hello world, from Selenium");
-//		actions.sendKeys(Keys.RETURN);
-//		actions.build().perform();
-//
-//		wait.withTimeout(3, TimeUnit.SECONDS).ignoring(StaleElementReferenceException.class);
-//
-//		WebElement msg = driver.findElement(
-//				By.xpath("//span[@class='message_body' and text() = 'hello world, from Selenium']"));
-//		assertNotNull(msg);
 //	}
 	
 	/**
@@ -222,22 +210,7 @@ public class WebTest
 //	@Test
 //	public void useCase2()
 //	{
-//		// Type something
-//		WebElement messageBot = driver.findElement(By.id("msg_input"));
-//		assertNotNull(messageBot);
 //		
-//		Actions actions = new Actions(driver);
-//		actions.moveToElement(messageBot);
-//		actions.click();
-//		actions.sendKeys("hello world, from Selenium");
-//		actions.sendKeys(Keys.RETURN);
-//		actions.build().perform();
-//
-//		wait.withTimeout(3, TimeUnit.SECONDS).ignoring(StaleElementReferenceException.class);
-//
-//		WebElement msg = driver.findElement(
-//				By.xpath("//span[@class='message_body' and text() = 'hello world, from Selenium']"));
-//		assertNotNull(msg);
 //	}
 	
 	/**
@@ -245,52 +218,49 @@ public class WebTest
 	 */
 	@Test
 	public void useCase3()
-	{		
-		/*
-		 *  SETTING THE THRESHOLD - LOW
-		 */
+	{
+		// SETTING THE THRESHOLD - LOW
 		testCommandOneResponse("@" + botName + " set coverage threshold to 5", 
 				"The coverage threshold has been set to 5");
 		
-		/*
-		 *  COVERAGE IS GOOD
-		 */
-		testCommandOneResponse("@" + botName + " test coveralls", "Current coverage is (91%)");
+		// COVERAGE IS GOOD
+//		testCommandOneResponse("@" + botName + " test coveralls", "Current coverage is (91%)");
 		
-		/*
-		 *  SETTING THE THRESHOLD - HIGH
-		 */
+		// SETTING THE THRESHOLD - HIGH
 		testCommandOneResponse("@" + botName + " set coverage threshold to 95", 
 				"The coverage threshold has been set to 95");
 		
-		/*
-		 *  COVERAGE IS BAD
-		 */
-		testCommandTwoResponses("@" + botName + " test coveralls", 
-				"Current coverage (91%) is below threshold (95%)", 
-				"Current issue title is set to Coverage 4 percent below threshold."
-				+ "Do you want to change the title of the issue (yes/no)?");
+		// COVERAGE IS BAD
+//		testCommandTwoResponses("@" + botName + " test coveralls", 
+//				"Current coverage (91%) is below threshold (95%)", 
+//				"Current issue title is set to Coverage 4 percent below threshold."
+//				+ "Do you want to change the title of the issue (yes/no)?");
 		
-		/*
-		 * 	NOT CREATING THE ISSUE
-		 */
-//		testCommandOneResponse("@" + botName + " help issue", "test issue");
+		// NOT CREATING THE ISSUE
+//		testCommandTwoResponses("@" + botName + " test coveralls", 
+//				"Current coverage (91%) is below threshold (95%)", 
+//				"Current issue title is set to Coverage 4 percent below threshold."
+//				+ "Do you want to change the title of the issue (yes/no)?");
+//		testCommandOneResponse("no", "");
 		
-		// TODO
+		// CHANGE ISSUE TITLE
+//		testCommandTwoResponses("@" + botName + " test coveralls", 
+//				"Current coverage (91%) is below threshold (95%)", 
+//				"Current issue title is set to Coverage 4 percent below threshold."
+//				+ "Do you want to change the title of the issue (yes/no)?");
+//		testCommandOneResponse("yes", "");
 		
-		/*
-		 *  CHANGE ISSUE TITLE
-		 */
-//		testCommandOneResponse("", "");
+		// ADD ISSUE ASSIGNEES
+//		testCommandOneResponse("@arewm", 
+//				"I am going to create an issue titled Coverage 4 percent below threshold and assign it to arewm");
 		
-		/*
-		 *  ADD ISSUE ASSIGNEES
-		 */
-		testCommandOneResponse("@arewm", "I am going to create an issue titled Coverage 4 percent below threshold and assign it to arewm");
-		
-		/*
-		 *  NOT ADD ISSUE ASSIGNEES
-		 */
+		// NOT ADD ISSUE ASSIGNEES
+//		testCommandTwoResponses("@" + botName + " test coveralls", 
+//				"Current coverage (91%) is below threshold (95%)", 
+//				"Current issue title is set to Coverage 4 percent below threshold."
+//				+ "Do you want to change the title of the issue (yes/no)?");
+//		testCommandOneResponse("no", 
+//				"Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...");
 //		testCommandOneResponse("", "");
 	}
 }
