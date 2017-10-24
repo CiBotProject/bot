@@ -6,6 +6,8 @@ var token = 'token ' + process.env.GITHUB_TOKEN;
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
 const mockData = require("./mocks/githubMock.json");
 
+var constants = require('../modules/constants.js');
+
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
 
@@ -39,7 +41,7 @@ function getRepoContents(owner, repo)
         request(options, function(error, response, body)
         {
             var contents = JSON.parse(body);
-            resolve(contents);
+			resolve(contents);
         });
     });
 }
@@ -95,7 +97,7 @@ function createRepoContents(owner, repo, content, file)
 {
 	var myMockData = mockData.createRepoContents.success
 	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	.put(`/repos/${owner}/${repo}/contents/${file}`)
 	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 
     var options =
@@ -120,7 +122,20 @@ function createRepoContents(owner, repo, content, file)
     {
         request(options, function(error, response, body)
         {
-            resolve(body);
+			if(response.statusCode == '201')
+			{
+				var message = constants.message;
+				message['status'] = constants.SUCCESS;
+				message['message'] = `The ${file} file was successfully created in ${owner}/${repo}`;
+				resolve(message);
+			}
+			else
+			{
+				var message = constants.message;
+				message['status'] = constants.FAILURE;
+				message['message'] = `There was a problem creating the ${file} file in ${owner}/${repo}`;
+				reject(message);
+			}
         });
     });
 }
@@ -328,9 +343,9 @@ function modifyIssueJSON(issue, optional) {
  * @param {Promise<json>} issue json of the issue to create
  */
 function createGitHubIssue(repo, owner, issuePromise) {
-	var myMockData = mockData.createGitHubIssue
+	var myMockData = mockData.createGitHubIssue.failure
 	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/issues`)
+	.post(`/repos/${owner}/${repo}/issues`)
 	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 
 	// Delete the repo and owner from the issue json before sending to GitHub
@@ -356,13 +371,28 @@ function createGitHubIssue(repo, owner, issuePromise) {
 		{
 			// If we are trying to submit to a repo that the issue was not created for, error out.
 			if (iRepo !== repo || iOwner !== owner){
-				reject('The issue was created for a different repository than it was submitted to.');
+				var message = constants.message;
+				message['status'] = constants.FAILURE;
+				message['message'] = 'The issue was created for a different repository than it was submitted to.';
+				reject(message);
 			}
 			// Send a http request to url and specify a callback that will be called upon its return.
 			request(options, function (error, response, body) 
 			{
-				// var obj = JSON.parse(body);
-				resolve(body);
+				if(response.statusCode == '201')
+				{
+					var message = constants.message;
+					message['status'] = constants.SUCCESS;
+					message['message'] = `Issue created with id ${body.id}`;
+					resolve(message);
+				}
+				else
+				{
+					var message = constants.message;
+					message['status'] = constants.FAILURE;
+					message['message'] = 'An error was encountered when trying to create the issue';
+					reject(message);
+				}
 			});
 		});
 	})
