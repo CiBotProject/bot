@@ -96,6 +96,12 @@ public class WebTest
         
     }
 	
+	/**
+	 * Helper function to test a command with one expected response
+	 * 
+	 * @param command
+	 * @param expectedResponse
+	 */
 	private void testCommandOneResponse(String command, String expectedResponse)
 	{
 		String xpathSearch = "//div[@class='message_content_header_left']/a[.= '" + botName + "']";
@@ -132,6 +138,13 @@ public class WebTest
 		assertEquals(expectedResponse, lastBody.getText());
 	}
 	
+	/**
+	 * Helper function to test a command with two expected responses
+	 * 
+	 * @param command
+	 * @param expectedResponse1
+	 * @param expectedResponse2
+	 */
 	private void testCommandTwoResponses(String command, String expectedResponse1, String expectedResponse2)
 	{
 		String xpathSearch = "//div[@class='message_content_header_left']/a[.= '" + botName + "']";
