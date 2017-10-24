@@ -1,9 +1,6 @@
- var Promise = require("bluebird");
-var chai = require("chai");
-var expect = chai.expect;
+var Promise = require("bluebird");
 var request = require("request");
 var nock = require("nock");
-var _ = require("underscore");
 var constant = require("../modules/constants");
 
 var data = require("../modules/mocks/coverallsMock.json");
