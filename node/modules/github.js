@@ -1,17 +1,10 @@
-var _ = require('underscore');
-var botkit = require('botkit');
-var chai = require('chai');
-var fs = require('fs');
 var nock = require('nock');
-var parse = require('parse-link-header');
 var Promise = require('bluebird');
-var querystring = require('querystring');
 var request = require('request');
-
-var expect = chai.expect;
 
 var token = 'token ' + process.env.GITHUB_TOKEN;
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
+const mockData = require("./mocks/githubMock.json");
 
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
@@ -24,6 +17,11 @@ var issueBodySignature = '\n\nCreated by CiBot!';
  */
 function getRepoContents(owner, repo)
 {
+	var myMockData = mockData.getRepoContents.success
+	var mockMe = nock(urlRoot)
+	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents`,
@@ -55,6 +53,11 @@ function getRepoContents(owner, repo)
  */
 function getFileSha(owner, repo, file)
 {
+	var myMockData = mockData.createRepoContents.success
+	var mockMe = nock(urlRoot)
+	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
@@ -90,6 +93,11 @@ function getFileSha(owner, repo, file)
  */
 function createRepoContents(owner, repo, content, file)
 {
+	var myMockData = mockData.createRepoContents.success
+	var mockMe = nock(urlRoot)
+	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
@@ -129,6 +137,11 @@ function createRepoContents(owner, repo, content, file)
  */
 function resetRepoContents(owner, repo, content, file)
 {
+	var myMockData = mockData.resetRepoContents.success
+	var mockMe = nock(urlRoot)
+	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+
     getFileSha(owner, repo, file).then(function(data)
     {
         var options =
@@ -180,8 +193,13 @@ function opt(options, name, defaultValue) {
  * @param {*} user user to test for membership in collaborators
  */
 function checkUserInCollaborators(repo, owner, user) {
+	var myMockData = mockData.checkUserInCollaborators.success
+	var mockMe = nock(urlRoot)
+	.get(`/repos/${owner}/${repo}/collaborators/${user}`)
+	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	
 	var options = {
-		url: urlRoot + "/repos/" + owner + "/" + repo + "/collaborators/" + user,
+		url: `${urlRoot}/repos/${owner}/${repo}/collaborators/${user}`,
 		method: 'GET',
 		headers: {
 			"user-agent": "CiBot",
@@ -310,6 +328,11 @@ function modifyIssueJSON(issue, optional) {
  * @param {Promise<json>} issue json of the issue to create
  */
 function createGitHubIssue(repo, owner, issuePromise) {
+	var myMockData = mockData.createGitHubIssue
+	var mockMe = nock(urlRoot)
+	.get(`${urlRoot}/repos/${owner}/${repo}/issues`)
+	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+
 	// Delete the repo and owner from the issue json before sending to GitHub
 	// but keep track of it to make sure that we have a json file that can be submitted here
 	return issuePromise.then(function(issue){
@@ -319,7 +342,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 		delete issue.owner;
 
 		var options = {
-			url: urlRoot + "/repos/" + owner + "/" + repo + "/issues",
+			url: `${urlRoot}/repos/${owner}/${repo}/issues`,
 			method: 'POST',
 			headers: {
 				"user-agent": "CiBot",
@@ -395,4 +418,3 @@ exports.resetRepoContents = resetRepoContents;
 exports.createIssueJSON = createIssueJSON;
 exports.modifyIssueJSON = modifyIssueJSON;
 exports.createGitHubIssue = createGitHubIssue;
-exports.modifyGitHubIssue = modifyGitHubIssue;
