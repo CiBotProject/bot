@@ -8,6 +8,6 @@
    "commit_sha":"27ea21edef73652eb1e72bd9942eea15c1fe4955",
    "repo_name":"sdg123/SlackBot",
    "badge_url":"https://s3.amazonaws.com/assets.coveralls.io/badges/coveralls_100.svg",
-   "coverage_change":100.0,
-   "covered_percent":100.0
+   "coverage_change":4.3,
+   "covered_percent":91.0
 }
