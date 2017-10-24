@@ -4,7 +4,7 @@ const nock = require("nock");
 const request = require("request");
 
 let token = "token ";
-let githubToken = "dacf2fc16170fe47f50edb21628b0a36fcc00cd5";
+let githubToken = process.env.GITHUB_TOKEN;
 let urlRoot = "https://api.travis-ci.org";
 let message = constant.message;
 let supportedTechs = ["Node.js", "Ruby"];
