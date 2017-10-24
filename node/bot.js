@@ -2,7 +2,6 @@
 var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
-//var childProcess = require("child_process");
 
 var controller = Botkit.slackbot({
   debug: false
