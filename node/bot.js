@@ -153,6 +153,7 @@ controller.hears(['test issue'],['direct_message','direct_mention','mention'],fu
     issueCreationConversation(bot,message);
   }
 });
+
 //test issue change name
 controller.hears(['test change issue'],['direct_message','direct_mention','mention'],function(bot,message){
   if(!globals.ownerMap[message.channel] && !globals.repoMap[message.channel]){
@@ -217,17 +218,17 @@ controller.hears(['help'],['direct_message','direct_mention','mention'],function
   else if(messageArray.indexOf('configure')!==-1){
     bot.reply(message,helpCommands().configure);
   }
+  else if(messageArray.indexOf('change')!==-1){
+    bot.reply(message,helpCommands().existing_issue);
+  }
   else if(messageArray.indexOf('issue')!==-1){
     bot.reply(message,helpCommands().issue);
   }
-  // else if(messageArray.indexOf('travis')!==-1){
-  //   bot.reply(message,helpCommands().travis);
-  // }
   else if(messageArray.indexOf('coveralls')!==-1){
     bot.reply(message,helpCommands().coveralls);
   }
   else {
-    bot.reply(message,"*_help init_* or *_help configure_* or *_help issue_* or *_help coveralls_*");
+    bot.reply(message,"*_help init_* or *_help configure_* or *_help issue_* or *_help change issue title_* or *_help coveralls_*");
   }
 });
 
@@ -236,6 +237,7 @@ function helpCommands(){
     init:"*_init travis <owner>/<repo_name>_*",
     configure:"*_configure yaml <owner>/<repository>_*",
     issue:"*_test issue_*",
+    existing_issue:"*_test change issue_*",
     coveralls:"*_test coveralls_*"
   }
 }
