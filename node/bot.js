@@ -90,6 +90,7 @@ askLanguageToUse = function(response,convo){
     }
     else{
         convo.say("Error in creating yaml file");
+        convo.say("See https://docs.travis-ci.com/user/languages/ to set up your repository.");
     }
     convo.next();
   });
