@@ -2,22 +2,16 @@ package selenium.tests;
 
 import static org.junit.Assert.*;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
-import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -184,30 +178,7 @@ public class WebTest
 		assertNotNull(lastBody);
 		assertEquals(expectedResponse2, lastBody.getText());
 	}
-	
-	
-	public void runCommand(String command)
-	{
-		String xpathSearch = "//div[@class='message_content_header_left']/a[.= '" + botName + "']";
-		String messageBodyRel = "../../following-sibling::span[@class='message_body']";
-		// Type in the help command 
-		WebElement messageBot = driver.findElement(By.id("msg_input"));
-		assertNotNull(messageBot);
-		int numMessagesBefore = driver.findElements(By.xpath(xpathSearch)).size();
-		
-		/*
-		 * DEFAULT HELP
-		 */
-		
-		Actions actions = new Actions(driver);
-		actions.moveToElement(messageBot);
-		actions.click();
-		actions.click();		// not sure if this does anything, but keystrokes were not registering
-		actions.click();
-		actions.sendKeys(command);
-		actions.sendKeys(Keys.RETURN);
-		actions.build().perform();
-	}
+
 	/**
 	 * 
 	 */
