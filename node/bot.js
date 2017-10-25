@@ -2,7 +2,6 @@
 var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
-//var childProcess = require("child_process");
 
 var controller = Botkit.slackbot({
   debug: false
@@ -30,7 +29,7 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
   var index = messageArray.indexOf('travis');
 
 
-  if(messageArray.indexOf('help')===-1){
+  if(messageArray.indexOf('help')===-1 && messageArray.indexOf('travis')!==-1 && messageArray.indexOf('init')!==-1){
     //repo name has to be word after init
     if((index+1)<messageArray.length)
         repoString = messageArray[index+1];

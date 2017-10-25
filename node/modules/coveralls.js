@@ -5,7 +5,7 @@ var constant = require("../modules/constants");
 
 var data = require("../modules/mocks/coverallsMock.json");
 
-exports.getCoverageInfo = function(commitSHA, coverageThreshold)
+function getCoverageInfo(commitSHA, coverageThreshold)
 {
 	var mockCoverallsService = nock("https://coveralls.io")
 			.get("/builds/" + commitSHA + ".json")
