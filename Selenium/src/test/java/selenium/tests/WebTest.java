@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -64,6 +65,10 @@ public class WebTest
 		// Switch to #selenium-bot channel and wait for it to load.
 		driver.get("https://slack-cibot.slack.com/messages/selenium-bot");
 		wait.until(ExpectedConditions.titleContains("selenium-bot"));
+
+		// Make sure the bot has a message so the xPath will find something
+		sendCommand("@" + botName + " help");
+		TimeUnit.SECONDS.sleep(2);
 		
 		String xBotSearch = "//div[@class='message_content_header_left']/a[.='" + botName + "']/../../../..";
 		WebElement botElement = driver.findElement(By.xpath(xBotSearch));
@@ -87,10 +92,18 @@ public class WebTest
 	@After
 	public void exitBotConversation()
 	{
-		String command = "quiddilygiff";
+		sendCommand("quiddilygiff");
+		sendCommand("quiddilygiff");
+		sendCommand("quiddilygiff");
+	}
+	
+	/**
+	 * Send a command to the channel without caring about the response
+	 * @param command The command to send
+	 */
+	private static void sendCommand(String command)
+	{
 		List<String> responses = Arrays.asList();
-		testCommandNResponses(command, responses);
-		testCommandNResponses(command, responses);
 		testCommandNResponses(command, responses);
 	}
 	
@@ -100,7 +113,7 @@ public class WebTest
 	 * @param command The command issued
 	 * @param response The expected response
 	 */
-	private void testCommandOneResponse(String command, String response)
+	private static void testCommandOneResponse(String command, String response)
 	{
 		List<String> responses = Arrays.asList(response);
 		testCommandNResponses(command, responses);
@@ -113,7 +126,7 @@ public class WebTest
 	 * @param response1 The first response
 	 * @param response2 The middle response
 	 */
-	private void testCommandTwoResponses(String command, String response1, String response2)
+	private static void testCommandTwoResponses(String command, String response1, String response2)
 	{
 		List<String> responses = Arrays.asList(response1, response2);
 		testCommandNResponses(command, responses);
@@ -127,7 +140,7 @@ public class WebTest
 	 * @param response2 The middle response
 	 * @param response3 The last response
 	 */
-	private void testCommandThreeResponses(String command, String response1, String response2, String response3)
+	private static void testCommandThreeResponses(String command, String response1, String response2, String response3)
 	{
 		List<String> responses = Arrays.asList(response1, response2, response3);
 		testCommandNResponses(command, responses);
@@ -139,7 +152,7 @@ public class WebTest
 	 * @param command The command to issue
 	 * @param responses List containing all expected responses
 	 */
-	private void testCommandNResponses(String command, List<String> responses)
+	private static void testCommandNResponses(String command, List<String> responses)
 	{
 		int numResponses = responses.size();
 
@@ -176,8 +189,8 @@ public class WebTest
 				assertNotNull(testElement);
 				assertEquals(responses.get(i), testElement.getText());
 			}
+			lastNumResponses = driver.findElements(By.xpath(botMemberMessageXPath)).size();
 		}
-		lastNumResponses = driver.findElements(By.xpath(botMemberMessageXPath)).size();
 	}
 	
 	/**
@@ -187,7 +200,7 @@ public class WebTest
 	 * @param diffCount
 	 * @return
 	 */
-	private List<WebElement> waitUntilCountChanges(final String xpath, final int minCount)
+	private static List<WebElement> waitUntilCountChanges(final String xpath, final int minCount)
 	{
 //		final int minCount = lastNumResponses + diffCount;
         WebDriverWait wait = new WebDriverWait(driver, 5);
