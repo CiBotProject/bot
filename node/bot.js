@@ -2,7 +2,7 @@
 var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
-
+var Github = require('./modules/github');
 var controller = Botkit.slackbot({
   debug: false
   //include "log: false" to disable logging
@@ -14,8 +14,9 @@ var tempIssueName = "";
 var globals = {
   coverageMap:{},//channel:threshold amount
   repoMap:{},//channel:repo name
-  ownerMap:{},
-  defaultThreshold:90,
+  ownerMap:{},//channel:owner name
+  yamlMap:{},//channel:true/false [check if yaml exisits or not]
+  defaultThreshold:95,
 };
 
 // connect the bot to a stream of messages
@@ -28,9 +29,10 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('travis');
 
-
   if(messageArray.indexOf('help')===-1 && messageArray.indexOf('travis')!==-1 && messageArray.indexOf('init')!==-1){
     //repo name has to be word after init
+    var repoString = null;
+
     if((index+1)<messageArray.length)
         repoString = messageArray[index+1];
     //if repo name is provided
@@ -51,7 +53,7 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
 
     }
     else{
-      bot.reply(message,"Please provide the name of the repository to be initialized. Ex init <repository>");
+      bot.reply(message,"Please provide the name of the repository to be initialized. Ex init travis <owner>/<repository>");
     }
   }
   else{
@@ -65,8 +67,9 @@ askYamlCreation = function(response,convo){
       askLanguageToUse(response,convo);
 
     }else{
-      convo.say("Initializing repository without yaml");
+      convo.say("Initialized repository without yaml");
     }
+    convo.say("Default coverage threshold for the current repository is set to "+globals.defaultThreshold+"%");
     convo.next();
   });
 }
@@ -76,7 +79,14 @@ askLanguageToUse = function(response,convo){
     var yamlStatus = Travis.createYaml(response.text);
     if(yamlStatus.status==='success'){
         //yamlStatus.data.body needs to be passed
-        convo.say("Yaml created");
+        convo.say("I am pushing the yaml file to the github repository ");
+
+        //push yaml to repository
+        Github.createRepoContents(globals.ownerMap[response.channel],globals.repoMap[response.channel],yamlStatus.data.body,".travis.yml").then(function(res){
+          convo.say("Pushed the yaml file to the github repository ");
+        }).catch(function(res){
+          convo.say("Error pushing the yaml file to the github repository ");
+        });
     }
     else{
         convo.say("Error in creating yaml file");
@@ -121,37 +131,53 @@ controller.hears(['configure yaml'],['direct_message','direct_mention','mention'
 //test last build and create issue on failure
 controller.hears(['test last build'],['direct_message','direct_mention','mention'],function(bot,message){
 
-  Travis.lastBuild(globals.ownerMap[message.channel],globals.repoMap[message.channel],function(data){
-    bot.reply(message,data.message);
-    if(data.status==='failure')
-      issueCreationConversation(bot,message,`Build failure`,"");
-  });
-
+  if(!globals.ownerMap[message.channel] && !globals.repoMap[message.channel]){
+    bot.reply(message,"Please run init travis <owner>/<repository> before testing last build function");
+  }
+  else{
+    Travis.lastBuild(globals.ownerMap[message.channel],globals.repoMap[message.channel],function(data){
+      bot.reply(message,data.message);
+      if(data.status==='failure')
+        issueCreationConversation(bot,message,`Build failure`,"");
+    });
+  }
 });
 
 //testing issue creation
 controller.hears(['test issue'],['direct_message','direct_mention','mention'],function(bot,message){
-  issueCreationConversation(bot,message);
+  if(!globals.ownerMap[message.channel] && !globals.repoMap[message.channel]){
+    bot.reply(message,"Please run init travis <owner>/<repository> before testing issue creation");
+  }
+  else{
+    issueCreationConversation(bot,message);
+  }
 });
 
 //testing Travis
-controller.hears(['test travis','test Travis'],['direct_message','direct_mention','mention'],function(bot,message){
-  bot.reply(message,"Testing travis");
-});
+//controller.hears(['test travis','test Travis'],['direct_message','direct_mention','mention'],function(bot,message){
+//  bot.reply(message,"Testing travis");
+//});
 
 //testing Coveralls and issue creation
 controller.hears(['test coveralls','test Coveralls'],['direct_message','direct_mention','mention'],function(bot,message){
 
-  var coverage = Coveralls.getCoverageInfo("123",globals.coverageMap[message.channel]);
-
-  bot.reply(message,coverage.message);
-
-  if(coverage.status==='failure'){
-    var coverageBelowThreshold = globals.coverageMap[message.channel] - coverage.data.body.covered_percent;
-    issueCreationConversation(bot,message,`Coverage ${coverageBelowThreshold} percent below threshold`);
+  if(!globals.ownerMap[message.channel] && !globals.repoMap[message.channel]){
+    bot.reply(message,"Please run init travis <owner>/<repository> before running coveralls");
   }
+  else{
+    Coveralls.getCoverageInfo("123",globals.coverageMap[message.channel]).then(function(coverage){
 
+      bot.reply(message,coverage.message);
+
+      if(coverage.status==='failure'){
+       var coverageBelowThreshold = globals.coverageMap[message.channel] - coverage.data.body.covered_percent;
+       issueCreationConversation(bot,message,`Coverage ${coverageBelowThreshold} percent below threshold`);
+      }
+
+    });
+  }
 });
+
 
 //setting Coveralls threshold
 controller.hears(['set coverage threshold','set threshold'],['direct_message','direct_mention','mention'],function(bot,message){
@@ -183,14 +209,14 @@ controller.hears(['help'],['direct_message','direct_mention','mention'],function
   else if(messageArray.indexOf('issue')!==-1){
     bot.reply(message,helpCommands().issue);
   }
-  else if(messageArray.indexOf('travis')!==-1){
-    bot.reply(message,helpCommands().travis);
-  }
+  // else if(messageArray.indexOf('travis')!==-1){
+  //   bot.reply(message,helpCommands().travis);
+  // }
   else if(messageArray.indexOf('coveralls')!==-1){
     bot.reply(message,helpCommands().coveralls);
   }
   else {
-    bot.reply(message,"*_help init_* or *_help configure_* or *_help issue_* or *_help travis_* or *_help coveralls_*");
+    bot.reply(message,"*_help init_* or *_help configure_* or *_help issue_* or *_help coveralls_*");
   }
 });
 
@@ -199,7 +225,6 @@ function helpCommands(){
     init:"*_init travis <owner>/<repo_name>_*",
     configure:"*_configure yaml <owner>/<repository>_*",
     issue:"*_test issue_*",
-    travis:"*_test travis_*",
     coveralls:"*_test coveralls_*"
   }
 }
@@ -267,6 +292,17 @@ askToAssignPeople = function(response,convo){
   convo.ask('Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...',function(response,convo){
     var listOutput = response.text;
     convo.say("I am going to create an issue titled *"+tempIssueName+"* and assign it to "+listOutput);
+
+    repo = globals.repoMap[response.channel];
+    owner = globals.ownerMap[response.channel];
+
+    Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName))
+    .then(function(res){
+      convo.say("Issue has been created");
+    }).catch(function(res){
+      convo.say("Error creating issue");
+    });
+
     tempIssueName = "";
     convo.next();
   });
