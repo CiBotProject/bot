@@ -202,7 +202,6 @@ public class WebTest
 	 */
 	private static List<WebElement> waitUntilCountChanges(final String xpath, final int minCount)
 	{
-//		final int minCount = lastNumResponses + diffCount;
         WebDriverWait wait = new WebDriverWait(driver, 5);
         wait.until(new ExpectedCondition<Boolean>() {
             public Boolean apply(WebDriver driver) {
