@@ -214,11 +214,25 @@ public class WebTest
 	/**
 	 * 
 	 */
-//	@Test
-//	public void useCase2()
-//	{
-//		
-//	}
+	@Test
+	public void useCase2()
+	{
+		testCommandTwoResponses("@" + botName + " init travis testuser/testrepo", 
+				"Travis activated for testuser/testrepo", "Would you like to create a yaml file (yes/no)?");
+		
+		testCommandOneResponse("yes", "Which language do you want to use ? Node.js,Ruby");
+		
+		testCommandOneResponse("Node.js", "Yaml created");
+		
+		testCommandTwoResponses("test last build", "The last build for test/demo failed", "Do you want to create an issue (yes/no)?");
+		
+		testCommandOneResponse("no", "I'll not create the issue");
+		
+		testCommandTwoResponses("test last build", "The last build for test/demo failed", "Do you want to create an issue (yes/no)?");
+		
+		testCommandOneResponse("yes", "Current issue title is set to *Build failure*.Do you want to change the title of the issue (yes/no)");
+		
+	}
 	
 	/**
 	 * 
