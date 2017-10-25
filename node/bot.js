@@ -103,7 +103,7 @@ controller.hears(['configure yaml'],['direct_message','direct_mention','mention'
   var index = messageArray.indexOf('yaml');
 
 
-  if(messageArray.indexOf('help')===-1){
+  if(messageArray.indexOf('help')===-1 && messageArray.indexOf('yaml')!==-1 && messageArray.indexOf('configure')!==-1){
     //repo name has to be word after init
     if((index+1)<messageArray.length)
         repoString = messageArray[index+1];
@@ -149,7 +149,18 @@ controller.hears(['test issue'],['direct_message','direct_mention','mention'],fu
     bot.reply(message,"Please run init travis <owner>/<repository> before testing issue creation");
   }
   else{
+    tempIssueName="";
     issueCreationConversation(bot,message);
+  }
+});
+//test issue change name
+controller.hears(['test change issue'],['direct_message','direct_mention','mention'],function(bot,message){
+  if(!globals.ownerMap[message.channel] && !globals.repoMap[message.channel]){
+    bot.reply(message,"Please run init travis <owner>/<repository> before testing issue creation");
+  }
+  else{
+    tempIssueName="";
+    issueCreationConversation(bot,message,"BUG");
   }
 });
 
@@ -246,7 +257,11 @@ function initializeRepository(bot,message,repoName,framework){
 }
 
 function issueCreationConversation(bot,message,issueTitle){
-  tempIssueName = issueTitle;
+  if(issueTitle)
+    tempIssueName = issueTitle;
+  else {
+    tempIssueName = "";
+  }
   bot.startConversation(message,askToCreateIssue);
 }
 //helper functions
