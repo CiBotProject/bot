@@ -114,7 +114,7 @@ function createRepoContents(owner, repo, content, file)
         {
             'path': file,
             'message': `[CiBot] Create ${file}`,
-            'content': `${encodeBase64(content)}`
+            'content': `${content}`
         }
     };
 
@@ -139,6 +139,16 @@ function createRepoContents(owner, repo, content, file)
         });
     });
 }
+
+// createRepoContents('timothy-dement','coveralls-test','# Test Content','.travis.yml')
+// .then(function(response)
+// {
+// 	console.log(response);
+// })
+// .catch(function(response)
+// {
+// 	console.log(response);
+// })
 
 /**
  * Overwrite the contents of a specified file in the root directory of a specified repository for a specified user.
@@ -343,7 +353,7 @@ function modifyIssueJSON(issue, optional) {
  * @param {Promise<json>} issue json of the issue to create
  */
 function createGitHubIssue(repo, owner, issuePromise) {
-	var myMockData = mockData.createGitHubIssue.failure
+	var myMockData = mockData.createGitHubIssue.success
 	var mockMe = nock(urlRoot)
 	.post(`/repos/${owner}/${repo}/issues`)
 	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
@@ -397,6 +407,16 @@ function createGitHubIssue(repo, owner, issuePromise) {
 		});
 	})
 };
+
+// createGitHubIssue('coveralls-test','timothy-dement',createIssueJSON('coveralls-test','timothy-dement','BUG'))
+// .then(function(response)
+// {
+// 	console.log(response);
+// })
+// .catch(function(response)
+// {
+// 	console.log(response);
+// })
 
 /** TESTING CODE FOR ISSUES! */
 // var issue
