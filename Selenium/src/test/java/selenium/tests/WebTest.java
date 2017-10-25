@@ -95,6 +95,12 @@ public class WebTest
 		sendCommand("quiddilygiff");
 		sendCommand("quiddilygiff");
 		sendCommand("quiddilygiff");
+
+		try {
+			TimeUnit.SECONDS.sleep(2);
+		} catch (InterruptedException e) {
+			System.out.println("GAH!");
+		}
 	}
 	
 	/**
@@ -262,6 +268,23 @@ public class WebTest
 	@Test
 	public void useCase2()
 	{
+		testCommandTwoResponses("@" + botName + " init travis test/demo", 
+				"Travis activated for test/demo", 
+				"Would you like to create a yaml file (yes/no)?");
+		testCommandTwoResponses("no", 
+				"Initialized repository without yaml", 
+				"Default coverage threshold for the current repository is set to 95%");
+		
+		testCommandTwoResponses("@" + botName + " init travis test/demo", 
+				"Travis activated for test/demo", 
+				"Would you like to create a yaml file (yes/no)?");
+		testCommandOneResponse("yes", 
+				"Which language do you want to use ? Node.js,Ruby");
+		testCommandThreeResponses("Python!", 
+				"Default coverage threshold for the current repository is set to 95%",
+				"Error in creating yaml file",
+				"See https://docs.travis-ci.com/user/languages/ to set up your repository.");
+		
 		testCommandTwoResponses("@" + botName + " init travis test/demo", 
 				"Travis activated for test/demo", 
 				"Would you like to create a yaml file (yes/no)?");
