@@ -105,6 +105,7 @@ controller.hears(['configure yaml'],['direct_message','direct_mention','mention'
 
   if(messageArray.indexOf('help')===-1 && messageArray.indexOf('yaml')!==-1 && messageArray.indexOf('configure')!==-1){
     //repo name has to be word after init
+    var repoString = null;
     if((index+1)<messageArray.length)
         repoString = messageArray[index+1];
     //if repo name is provided
