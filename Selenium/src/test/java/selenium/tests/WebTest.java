@@ -185,10 +185,33 @@ public class WebTest
 		assertEquals(expectedResponse2, lastBody.getText());
 	}
 	
+	
+	public void runCommand(String command)
+	{
+		String xpathSearch = "//div[@class='message_content_header_left']/a[.= '" + botName + "']";
+		String messageBodyRel = "../../following-sibling::span[@class='message_body']";
+		// Type in the help command 
+		WebElement messageBot = driver.findElement(By.id("msg_input"));
+		assertNotNull(messageBot);
+		int numMessagesBefore = driver.findElements(By.xpath(xpathSearch)).size();
+		
+		/*
+		 * DEFAULT HELP
+		 */
+		
+		Actions actions = new Actions(driver);
+		actions.moveToElement(messageBot);
+		actions.click();
+		actions.click();		// not sure if this does anything, but keystrokes were not registering
+		actions.click();
+		actions.sendKeys(command);
+		actions.sendKeys(Keys.RETURN);
+		actions.build().perform();
+	}
 	/**
 	 * 
 	 */
-	@Test
+	/*@Test
 	public void helpMessage()
 	{
 		// GENERAL HELP
@@ -206,7 +229,7 @@ public class WebTest
 		
 		// USE CASE 3 HELP
 		testCommandOneResponse("@" + botName + " help coveralls", "test coveralls");
-	}
+	}*/
 	
 	/**
 	 * 
@@ -232,48 +255,46 @@ public class WebTest
 	@Test
 	public void useCase3()
 	{
+		testCommandTwoResponses("@" + botName + " init travis o/r","Travis activated for o/r", "Would you like to create a yaml file (yes/no)?");
+		testCommandTwoResponses("no","Initialized repository without yaml","Default coverage threshold for the current repository is set to 95%");
+		
+		
 		// SETTING THE THRESHOLD - LOW
 		testCommandOneResponse("@" + botName + " set coverage threshold to 5", 
 				"The coverage threshold has been set to 5");
 		
+		
 		// COVERAGE IS GOOD
-//		testCommandOneResponse("@" + botName + " test coveralls", "Current coverage is (91%)");
+		testCommandOneResponse("@" + botName + " test coveralls", "Current coverage is (91%)");
 		
 		// SETTING THE THRESHOLD - HIGH
 		testCommandOneResponse("@" + botName + " set coverage threshold to 95", 
 				"The coverage threshold has been set to 95");
 		
 		// COVERAGE IS BAD
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
+		testCommandTwoResponses("@" + botName + " test coveralls", 
+				"Current coverage (91%) is below threshold (95%)", 
+				"Do you want to create an issue (yes/no)?");
+		
 		
 		// NOT CREATING THE ISSUE
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
-//		testCommandOneResponse("no", "");
+		testCommandOneResponse("no", "I'll not create the issue");
 		
 		// CHANGE ISSUE TITLE
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
-//		testCommandOneResponse("yes", "");
+		testCommandOneResponse("@" + botName + " test change issue", 
+				"Do you want to create an issue (yes/no)?");
+		testCommandOneResponse("yes", "Current issue title is set to BUG.Do you want to change the title of the issue (yes/no)");
+		testCommandOneResponse("yes", 
+				"Please enter the name of the issue");
+		testCommandTwoResponses("issue-name", 
+				"I'm creating an issue titled issue-name",
+				"Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...");
+		
+		
 		
 		// ADD ISSUE ASSIGNEES
-//		testCommandOneResponse("@arewm", 
-//				"I am going to create an issue titled Coverage 4 percent below threshold and assign it to arewm");
-		
-		// NOT ADD ISSUE ASSIGNEES
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
-//		testCommandOneResponse("no", 
-//				"Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...");
-//		testCommandOneResponse("", "");
+		testCommandTwoResponses("user", 
+				"I am going to create an issue titled issue-name and assign it to user",
+				"Issue has been created");
 	}
 }
