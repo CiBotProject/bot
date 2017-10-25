@@ -11,6 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -157,7 +158,15 @@ public class WebTest
 		actions.build().perform();
 
 		// Execute the actions and wait until the number of messages changes
-		List<WebElement> messages = waitUntilCountChanges(xpathSearch, numMessagesBefore + numResponses);
+		List<WebElement> messages = null;
+		try {
+			messages = waitUntilCountChanges(xpathSearch, numMessagesBefore + numResponses);
+		}
+		catch (TimeoutException e)
+		{
+			// Try to recover from the error, maybe we missed the message
+			messages = driver.findElements(By.xpath(xpathSearch));
+		}
 		// Make sure that we have a new messages
 		assertTrue("There were no messages", messages.size() > 0);
 		assertTrue("No new messages were found", messages.size() == numMessagesBefore + numResponses);
