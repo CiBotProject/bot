@@ -178,26 +178,30 @@ public class WebTest
 	@Test
 	public void helpMessage()
 	{
-//		// GENERAL HELP
-//		testCommandOneResponse("@" + botName + " help", 
-//				"help init or help configure or help issue or help travis or help coveralls");
-//		
-//		// USE CASE 1 HELP
-//		testCommandOneResponse("@" + botName + " help init", 
-//				"init <repository>");
-//		testCommandOneResponse("@" + botName + " help configure", 
-//				"configure <repository>");
-//		
-//		testCommandOneResponse("@" + botName + " help issue", 
-//				"test issue");
-//		
-//		// USE CASE 2 HELP
+		// GENERAL HELP
+		testCommandOneResponse("@" + botName + " help", 
+				"help init, help configure, help issue, help change issue, help coveralls");
+		
+		// USE CASE 1 HELP
+		testCommandOneResponse("@" + botName + " help init", 
+				"init travis <owner>/<repository>");
+		testCommandOneResponse("@" + botName + " help configure", 
+				"configure yaml <owner>/<repository>");
+		
+		testCommandOneResponse("@" + botName + " help issue", 
+				"test issue");
+		
+		testCommandOneResponse("@" + botName + " help change issue", 
+				"test change issue");
+		
+		// USE CASE 2 HELP
+		// This is no longer used.
 //		testCommandOneResponse("@" + botName + " help travis", 
 //				"test travis");
-//		
-//		// USE CASE 3 HELP
-//		testCommandOneResponse("@" + botName + " help coveralls", 
-//				"test coveralls");
+		
+		// USE CASE 3 HELP
+		testCommandOneResponse("@" + botName + " help coveralls", 
+				"test coveralls");
 	}
 	
 	/**
@@ -244,7 +248,7 @@ public class WebTest
 		testCommandOneResponse("no", 
 				"Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...");
 		testCommandTwoResponses("@null", 
-				"I am going to create an issue titled *Build failure* and assign it to @null",
+				"I am going to create an issue titled Build failure and assign it to @null",
 				"Issue has been created");
 	}
 	
