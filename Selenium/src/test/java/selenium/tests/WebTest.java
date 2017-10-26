@@ -32,6 +32,8 @@ public class WebTest
 	private static String botMemberId = "";
 	private static String botMemberMessageXPath = "";
 	private static int lastNumResponses = 0;
+
+	private static String botChannel = System.getenv("SLACK_CHANNEL");
 	
 	@BeforeClass
 	public static void setUp() throws Exception 
@@ -62,9 +64,13 @@ public class WebTest
 		// Wait until we go to general channel.
 		wait.until(ExpectedConditions.titleContains("general"));
 
+		if (botChannel == null) {
+			botChannel = "selenium-bot";
+		}
+		
 		// Switch to #selenium-bot channel and wait for it to load.
-		driver.get("https://slack-cibot.slack.com/messages/selenium-bot");
-		wait.until(ExpectedConditions.titleContains("selenium-bot"));
+		driver.get("https://slack-cibot.slack.com/messages/" + botChannel);
+		wait.until(ExpectedConditions.titleContains(botChannel));
 
 		// Make sure the bot has a message so the xPath will find something
 		sendCommand("@" + botName + " help");
@@ -92,9 +98,9 @@ public class WebTest
 	@After
 	public void exitBotConversation()
 	{
-		sendCommand("quiddilygiff");
-		sendCommand("quiddilygiff");
-		sendCommand("quiddilygiff");
+//		sendCommand("quiddilygiff");
+//		sendCommand("quiddilygiff");
+//		sendCommand("quiddilygiff");
 
 		try {
 			TimeUnit.SECONDS.sleep(2);
@@ -253,14 +259,27 @@ public class WebTest
 				"test coveralls");
 	}
 	
+
 	/**
 	 * 
 	 */
-//	@Test
-//	public void useCase1()
-//	{
-//		
-//	}
+	@Test
+	public void useCase1()
+	{
+		// Confirm proper response for a valid language.
+		testCommandOneResponse("@" + botName + " configure yaml o/r",
+				"Which language do you want to use ? Node.js,Ruby");
+		testCommandTwoResponses("Node.js",
+				"I am pushing the yaml file to the github repository",
+				"Pushed the yaml file to the github repository");
+		
+		// Confirm proper response for an invalid language.
+		testCommandOneResponse("@" + botName + " configure yaml o/r",
+				"Which language do you want to use ? Node.js,Ruby");
+		testCommandTwoResponses("FORTRAN",
+				"Error in creating yaml file",
+				"See https://docs.travis-ci.com/user/languages/ to set up your repository.");
+	}
 	
 	/**
 	 * 
