@@ -90,6 +90,7 @@ askLanguageToUse = function(response,convo){
     }
     else{
         convo.say("Error in creating yaml file");
+        convo.say("See https://docs.travis-ci.com/user/languages/ to set up your repository.");
     }
     convo.next();
   });
@@ -219,38 +220,31 @@ controller.hears(['help'],['direct_message','direct_mention','mention'],function
   else if(messageArray.indexOf('configure')!==-1){
     bot.reply(message,helpCommands().configure);
   }
-  else if(messageArray.indexOf('change')!==-1){
-    bot.reply(message,helpCommands().existing_issue);
-  }
   else if(messageArray.indexOf('issue')!==-1){
-    bot.reply(message,helpCommands().issue);
+    if (messageArray.indexOf('change')!==-1){
+      bot.reply(message,helpCommands().existing_issue);
+    } 
+    else {
+      bot.reply(message,helpCommands().issue);
+    }
   }
   else if(messageArray.indexOf('coveralls')!==-1){
     bot.reply(message,helpCommands().coveralls);
   }
   else {
-    bot.reply(message,"*_help init_* or *_help configure_* or *_help issue_* or *_help change issue title_* or *_help coveralls_*");
+    bot.reply(message,"*_help init_*, *_help configure_*, *_help issue_*, *_help change issue_*, *_help coveralls_*");
   }
 });
 
 function helpCommands(){
   return{
-    init:"*_init travis <owner>/<repo_name>_*",
+    init:"*_init travis <owner>/<repository>_*",
     configure:"*_configure yaml <owner>/<repository>_*",
     issue:"*_test issue_*",
     existing_issue:"*_test change issue_*",
     coveralls:"*_test coveralls_*"
   }
 }
-/**
- * Selenium testing for presence of bot
- * TODO: pull out all selenium tests into their own module
- */
-controller.hears('hello world, from Selenium',['mention', 'direct_mention','direct_message', 'ambient'], function(bot,message)
-{
-  console.log(message);
-  bot.reply(message, message.text);
-});
 
 /*HELPER FUNCTIONS*/
 function initializeRepository(bot,message,repoName,framework){

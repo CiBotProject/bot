@@ -2,22 +2,21 @@ package selenium.tests;
 
 import static org.junit.Assert.*;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
-import org.openqa.selenium.StaleElementReferenceException;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -30,7 +29,11 @@ public class WebTest
 	private static WebDriver driver;
 	private static WebDriverWait wait;
 	private static String botName = System.getenv("SLACK_BOT_NAME");
-//	private static int numResponses = 0;
+	private static String botMemberId = "";
+	private static String botMemberMessageXPath = "";
+	private static int lastNumResponses = 0;
+
+	private static String botChannel = System.getenv("SLACK_CHANNEL");
 	
 	@BeforeClass
 	public static void setUp() throws Exception 
@@ -61,9 +64,23 @@ public class WebTest
 		// Wait until we go to general channel.
 		wait.until(ExpectedConditions.titleContains("general"));
 
+		if (botChannel == null) {
+			botChannel = "selenium-bot";
+		}
+		
 		// Switch to #selenium-bot channel and wait for it to load.
-		driver.get("https://slack-cibot.slack.com/messages/selenium-bot");
-		wait.until(ExpectedConditions.titleContains("selenium-bot"));
+		driver.get("https://slack-cibot.slack.com/messages/" + botChannel);
+		wait.until(ExpectedConditions.titleContains(botChannel));
+
+		// Make sure the bot has a message so the xPath will find something
+		sendCommand("@" + botName + " help");
+		TimeUnit.SECONDS.sleep(2);
+		
+		String xBotSearch = "//div[@class='message_content_header_left']/a[.='" + botName + "']/../../../..";
+		WebElement botElement = driver.findElement(By.xpath(xBotSearch));
+		botMemberId = botElement.getAttribute("data-member-id");
+		botMemberMessageXPath = "//ts-message[@data-member-id='" + botMemberId + "']//span[@class='message_body']";
+		lastNumResponses = driver.findElements(By.xpath(botMemberMessageXPath)).size();
 	}
 	
 	@AfterClass
@@ -74,13 +91,128 @@ public class WebTest
 	}
 	
 	/**
+	 * Helper function to make sure that we are not inside a bot message thread by sending several
+	 * nonsense commands
+	 * 
+	 */
+	@After
+	public void exitBotConversation()
+	{
+//		sendCommand("quiddilygiff");
+//		sendCommand("quiddilygiff");
+//		sendCommand("quiddilygiff");
+
+		try {
+			TimeUnit.SECONDS.sleep(2);
+		} catch (InterruptedException e) {
+			System.out.println("GAH!");
+		}
+	}
+	
+	/**
+	 * Send a command to the channel without caring about the response
+	 * @param command The command to send
+	 */
+	private static void sendCommand(String command)
+	{
+		List<String> responses = Arrays.asList();
+		testCommandNResponses(command, responses);
+	}
+	
+	/**
+	 * Helper function to test a command with one expected response
+	 * 
+	 * @param command The command issued
+	 * @param response The expected response
+	 */
+	private static void testCommandOneResponse(String command, String response)
+	{
+		List<String> responses = Arrays.asList(response);
+		testCommandNResponses(command, responses);
+	}
+	
+	/**
+	 * Helper function to test a command with two expected responses
+	 * 
+	 * @param command The command issued
+	 * @param response1 The first response
+	 * @param response2 The middle response
+	 */
+	private static void testCommandTwoResponses(String command, String response1, String response2)
+	{
+		List<String> responses = Arrays.asList(response1, response2);
+		testCommandNResponses(command, responses);
+	}
+	
+	/**
+	 * Helper function to test a command with three expected responses
+	 * 
+	 * @param command The command issued
+	 * @param response1 The first response
+	 * @param response2 The middle response
+	 * @param response3 The last response
+	 */
+	private static void testCommandThreeResponses(String command, String response1, String response2, String response3)
+	{
+		List<String> responses = Arrays.asList(response1, response2, response3);
+		testCommandNResponses(command, responses);
+	}
+	
+	/**
+	 * Helper function to test a command with n expected responses
+	 * 
+	 * @param command The command to issue
+	 * @param responses List containing all expected responses
+	 */
+	private static void testCommandNResponses(String command, List<String> responses)
+	{
+		int numResponses = responses.size();
+
+		// Type in the help command 
+		WebElement messageBot = driver.findElement(By.id("msg_input"));
+		assertNotNull(messageBot);
+		Actions actions = new Actions(driver);
+		actions.moveToElement(messageBot);
+		actions.click();
+		actions.click();		// not sure if this does anything, but keystrokes were not registering
+		actions.click();
+		actions.sendKeys(command);
+		actions.sendKeys(Keys.RETURN);
+		actions.build().perform();
+
+		// check the responses if we want
+		if (responses.size() > 0)
+		{
+			List<WebElement> messages = null;
+			// Execute the actions and wait until the number of messages changes
+			try {
+				messages = waitUntilCountChanges(botMemberMessageXPath, lastNumResponses + numResponses);
+			}
+			catch (TimeoutException e)
+			{
+				// We time exceeded, but that is okay. Maybe we missed the response, 
+				// 		so we will try anyway.
+				 messages = driver.findElements(By.xpath(botMemberMessageXPath));
+			}
+
+			for (int i = 0; i < numResponses; i++)
+			{
+				WebElement testElement = messages.get(messages.size() - numResponses + i);
+				assertNotNull(testElement);
+				assertEquals(responses.get(i), testElement.getText());
+			}
+			lastNumResponses = driver.findElements(By.xpath(botMemberMessageXPath)).size();
+		}
+	}
+	
+	/**
 	 * Helper function to make sure that we have all of the messages we want to check
 	 * 
 	 * @param xpath
-	 * @param minCount
+	 * @param diffCount
 	 * @return
 	 */
-	private List<WebElement> waitUntilCountChanges(final String xpath, final int minCount)
+	private static List<WebElement> waitUntilCountChanges(final String xpath, final int minCount)
 	{
         WebDriverWait wait = new WebDriverWait(driver, 5);
         wait.until(new ExpectedCondition<Boolean>() {
@@ -93,98 +225,8 @@ public class WebTest
             }
         });
         return driver.findElements(By.xpath(xpath));
-        
     }
-	
-	/**
-	 * Helper function to test a command with one expected response
-	 * 
-	 * @param command
-	 * @param expectedResponse
-	 */
-	private void testCommandOneResponse(String command, String expectedResponse)
-	{
-		String xpathSearch = "//div[@class='message_content_header_left']/a[.= '" + botName + "']";
-		String messageBodyRel = "../../following-sibling::span[@class='message_body']";
-		// Type in the help command 
-		WebElement messageBot = driver.findElement(By.id("msg_input"));
-		assertNotNull(messageBot);
-		int numMessagesBefore = driver.findElements(By.xpath(xpathSearch)).size();
-		
-		/*
-		 * DEFAULT HELP
-		 */
-		
-		Actions actions = new Actions(driver);
-		actions.moveToElement(messageBot);
-		actions.click();
-		actions.click();		// not sure if this does anything, but keystrokes were not registering
-		actions.click();
-		actions.sendKeys(command);
-		actions.sendKeys(Keys.RETURN);
-		actions.build().perform();
 
-		// Execute the actions and wait until the number of messages changes
-		List<WebElement> messages = waitUntilCountChanges(xpathSearch, numMessagesBefore + 1);
-		// Make sure that we have a new messages
-		assertTrue("There were no messages", messages.size() > 0);
-		assertTrue("No new messages were found", messages.size() == numMessagesBefore + 1);
-		
-		WebElement lastElement = messages.get(messages.size() - 1);
-		WebElement lastBody = lastElement.findElement(By.xpath(messageBodyRel));
-	
-		// Make sure that we have the right text
-		assertNotNull(lastBody);
-		assertEquals(expectedResponse, lastBody.getText());
-	}
-	
-	/**
-	 * Helper function to test a command with two expected responses
-	 * 
-	 * @param command
-	 * @param expectedResponse1
-	 * @param expectedResponse2
-	 */
-	private void testCommandTwoResponses(String command, String expectedResponse1, String expectedResponse2)
-	{
-		String xpathSearch = "//div[@class='message_content_header_left']/a[.= '" + botName + "']";
-		String messageBodyRel = "../../following-sibling::span[@class='message_body']";
-		// Type in the help command 
-		WebElement messageBot = driver.findElement(By.id("msg_input"));
-		assertNotNull(messageBot);
-		int numMessagesBefore = driver.findElements(By.xpath(xpathSearch)).size();
-		
-		/*
-		 * DEFAULT HELP
-		 */
-		
-		Actions actions = new Actions(driver);
-		actions.moveToElement(messageBot);
-		actions.click();
-		actions.click();		// not sure if this does anything, but keystrokes were not registering
-		actions.click();
-		actions.sendKeys(command);
-		actions.sendKeys(Keys.RETURN);
-		actions.build().perform();
-
-		// Execute the actions and wait until the number of messages changes
-		List<WebElement> messages = waitUntilCountChanges(xpathSearch, numMessagesBefore + 2);
-		// Make sure that we have a new messages
-		assertTrue("There were no messages", messages.size() > 0);
-		assertTrue("No new messages were found", messages.size() == numMessagesBefore + 2);
-
-		WebElement secondLastElement = messages.get(messages.size() -2);
-		WebElement secondLastBody = secondLastElement.findElement(By.xpath(messageBodyRel));
-		WebElement lastElement = messages.get(messages.size() - 1);
-		WebElement lastBody = lastElement.findElement(By.xpath(messageBodyRel));
-	
-		// Make sure that we have the right text
-		assertNotNull(secondLastBody);
-		assertEquals(expectedResponse1, secondLastBody.getText());
-		assertNotNull(lastBody);
-		assertEquals(expectedResponse2, lastBody.getText());
-	}
-	
 	/**
 	 * 
 	 */
@@ -193,38 +235,107 @@ public class WebTest
 	{
 		// GENERAL HELP
 		testCommandOneResponse("@" + botName + " help", 
-				"help init or help configure or help issue or help travis or help coveralls");
-		
+				"help init, help configure, help issue, help change issue, help coveralls");
+
 		// USE CASE 1 HELP
-		testCommandOneResponse("@" + botName + " help init", "init <repository>");
-		testCommandOneResponse("@" + botName + " help configure", "configure <repository>");
-		
-		testCommandOneResponse("@" + botName + " help issue", "test issue");
+		testCommandOneResponse("@" + botName + " help init", 
+				"init travis <owner>/<repository>");
+		testCommandOneResponse("@" + botName + " help configure", 
+				"configure yaml <owner>/<repository>");
+
+		testCommandOneResponse("@" + botName + " help issue", 
+				"test issue");
+
+		testCommandOneResponse("@" + botName + " help change issue", 
+				"test change issue");
 		
 		// USE CASE 2 HELP
-		testCommandOneResponse("@" + botName + " help travis", "test travis");
-		
+		// This is no longer used.
+//		testCommandOneResponse("@" + botName + " help travis", 
+//				"test travis");
+
 		// USE CASE 3 HELP
-		testCommandOneResponse("@" + botName + " help coveralls", "test coveralls");
+		testCommandOneResponse("@" + botName + " help coveralls", 
+				"test coveralls");
+	}
+	
+
+	/**
+	 * 
+	 */
+	@Test
+	public void useCase1()
+	{
+		// Confirm proper response for a valid language.
+		testCommandOneResponse("@" + botName + " configure yaml o/r",
+				"Which language do you want to use ? Node.js,Ruby");
+		testCommandTwoResponses("Node.js",
+				"I am pushing the yaml file to the github repository",
+				"Pushed the yaml file to the github repository");
+		
+		// Confirm proper response for an invalid language.
+		testCommandOneResponse("@" + botName + " configure yaml o/r",
+				"Which language do you want to use ? Node.js,Ruby");
+		testCommandTwoResponses("FORTRAN",
+				"Error in creating yaml file",
+				"See https://docs.travis-ci.com/user/languages/ to set up your repository.");
 	}
 	
 	/**
 	 * 
 	 */
-//	@Test
-//	public void useCase1()
-//	{
-//		
-//	}
-	
-	/**
-	 * 
-	 */
-//	@Test
-//	public void useCase2()
-//	{
-//		
-//	}
+	@Test
+	public void useCase2()
+	{
+		testCommandTwoResponses("@" + botName + " init travis test/demo", 
+				"Travis activated for test/demo", 
+				"Would you like to create a yaml file (yes/no)?");
+		testCommandTwoResponses("no", 
+				"Initialized repository without yaml", 
+				"Default coverage threshold for the current repository is set to 95%");
+		
+		testCommandTwoResponses("@" + botName + " init travis test/demo", 
+				"Travis activated for test/demo", 
+				"Would you like to create a yaml file (yes/no)?");
+		testCommandOneResponse("yes", 
+				"Which language do you want to use ? Node.js,Ruby");
+		testCommandThreeResponses("Python!", 
+				"Default coverage threshold for the current repository is set to 95%",
+				"Error in creating yaml file",
+				"See https://docs.travis-ci.com/user/languages/ to set up your repository.");
+		
+		testCommandTwoResponses("@" + botName + " init travis test/demo", 
+				"Travis activated for test/demo", 
+				"Would you like to create a yaml file (yes/no)?");
+
+		testCommandOneResponse("yes", 
+				"Which language do you want to use ? Node.js,Ruby");
+
+		testCommandThreeResponses("Node.js", 
+				"Default coverage threshold for the current repository is set to 95%",
+				"I am pushing the yaml file to the github repository",
+				"Pushed the yaml file to the github repository");
+
+		testCommandTwoResponses("@" + botName + " test last build", 
+				"The last build for test/demo failed", 
+				"Do you want to create an issue (yes/no)?");
+
+		testCommandOneResponse("no", 
+				"I'll not create the issue");
+
+		testCommandTwoResponses("@" + botName + " test last build", 
+				"The last build for test/demo failed", 
+				"Do you want to create an issue (yes/no)?");
+
+		testCommandOneResponse("yes", 
+				"Current issue title is set to Build failure.Do you want to change the title of the issue (yes/no)");
+
+		testCommandOneResponse("no", 
+				"Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...");
+		testCommandTwoResponses("@null", 
+				"I am going to create an issue titled Build failure and assign it to @null",
+				"Issue has been created");
+	}
 	
 	/**
 	 * 
@@ -232,48 +343,50 @@ public class WebTest
 	@Test
 	public void useCase3()
 	{
+		testCommandTwoResponses("@" + botName + " init travis o/r",
+				"Travis activated for o/r", 
+				"Would you like to create a yaml file (yes/no)?");
+		testCommandTwoResponses("no",
+				"Initialized repository without yaml",
+				"Default coverage threshold for the current repository is set to 95%");
+		
 		// SETTING THE THRESHOLD - LOW
 		testCommandOneResponse("@" + botName + " set coverage threshold to 5", 
 				"The coverage threshold has been set to 5");
 		
+
 		// COVERAGE IS GOOD
-//		testCommandOneResponse("@" + botName + " test coveralls", "Current coverage is (91%)");
-		
+		testCommandOneResponse("@" + botName + " test coveralls", 
+				"Current coverage is (91%)");
+
 		// SETTING THE THRESHOLD - HIGH
 		testCommandOneResponse("@" + botName + " set coverage threshold to 95", 
 				"The coverage threshold has been set to 95");
-		
+
 		// COVERAGE IS BAD
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
+		testCommandTwoResponses("@" + botName + " test coveralls", 
+				"Current coverage (91%) is below threshold (95%)", 
+				"Do you want to create an issue (yes/no)?");
 		
+
 		// NOT CREATING THE ISSUE
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
-//		testCommandOneResponse("no", "");
-		
+		testCommandOneResponse("no", 
+				"I'll not create the issue");
+
 		// CHANGE ISSUE TITLE
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
-//		testCommandOneResponse("yes", "");
-		
+		testCommandOneResponse("@" + botName + " test change issue", 
+				"Do you want to create an issue (yes/no)?");
+		testCommandOneResponse("yes", 
+				"Current issue title is set to BUG.Do you want to change the title of the issue (yes/no)");
+		testCommandOneResponse("yes", 
+				"Please enter the name of the issue");
+		testCommandTwoResponses("issue-name", 
+				"I'm creating an issue titled issue-name",
+				"Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...");
+
 		// ADD ISSUE ASSIGNEES
-//		testCommandOneResponse("@arewm", 
-//				"I am going to create an issue titled Coverage 4 percent below threshold and assign it to arewm");
-		
-		// NOT ADD ISSUE ASSIGNEES
-//		testCommandTwoResponses("@" + botName + " test coveralls", 
-//				"Current coverage (91%) is below threshold (95%)", 
-//				"Current issue title is set to Coverage 4 percent below threshold."
-//				+ "Do you want to change the title of the issue (yes/no)?");
-//		testCommandOneResponse("no", 
-//				"Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...");
-//		testCommandOneResponse("", "");
+		testCommandTwoResponses("@user", 
+				"I am going to create an issue titled issue-name and assign it to @user",
+				"Issue has been created");
 	}
 }

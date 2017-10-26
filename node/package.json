@@ -46,6 +46,7 @@
     "bluebird": "^3.5.1",
     "botkit": "^0.5.8",
     "chai": "^4.1.2",
+    "clone": "^2.1.1",
     "coveralls": "^3.0.0",
     "istanbul": "^0.4.5",
     "mocha": "^4.0.1",
