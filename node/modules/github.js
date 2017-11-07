@@ -1,6 +1,7 @@
 var nock = require('nock');
 var Promise = require('bluebird');
 var request = require('request');
+var _ = require('underscore');
 
 var token = 'token ' + process.env.GITHUB_TOKEN;
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
@@ -19,10 +20,10 @@ var issueBodySignature = '\n\nCreated by CiBot!';
  */
 function getRepoContents(owner, repo)
 {
-	var myMockData = mockData.getRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.getRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 	
     var options =
     {
@@ -95,10 +96,10 @@ function getFileSha(owner, repo, file)
  */
 function createRepoContents(owner, repo, content, file)
 {
-	var myMockData = mockData.createRepoContents.success
-	var mockMe = nock(urlRoot)
-	.put(`/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.createRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .put(`/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 
     var options =
     {
@@ -201,6 +202,21 @@ function insertReadmeBadge(owner, repo, branch) {
 
 	// 1. Check for existence of README.md in root directory.
 
+	getRepoContents(owner, repo).then(function(contents) {
+
+		var rootFileNames = _.pluck(contents, 'name');
+
+		if (_.contains(rootFileNames, 'README.md')) {
+			console.log('YOU GOT A README');
+		} else {
+
+			var badges = createTravisMarkdownBadge(owner, repo, branch) + " " + createCoverallsMarkdownBadge(owner, repo, branch);
+			var encodedBadges = encodeBase64(badges);
+
+			createRepoContents(owner, repo, encodedBadges, 'README.md');
+		}
+	});
+
 		// 1.1. If README.md does not exist, create with badges.
 
 		// 1.2. If README.md exists, check for badge presence.
@@ -210,6 +226,8 @@ function insertReadmeBadge(owner, repo, branch) {
 			// 1.2.2. If badges present, do nothing.
 
 }
+
+insertReadmeBadge('Timothy-Dement', 'COVERALLS-TEST', 'master');
 
 /**
  * Parse optional fields in a json
