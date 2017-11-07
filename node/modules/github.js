@@ -197,6 +197,20 @@ function resetRepoContents(owner, repo, content, file)
     });
 }
 
+function insertReadmeBadge(owner, repo, branch) {
+
+	// 1. Check for existence of README.md in root directory.
+
+		// 1.1. If README.md does not exist, create with badges.
+
+		// 1.2. If README.md exists, check for badge presence.
+		
+			// 1.2.1. If badges not present, insert at top.
+
+			// 1.2.2. If badges present, do nothing.
+
+}
+
 /**
  * Parse optional fields in a json
  * @param {*} options variable containing the optional arguments
@@ -459,6 +473,24 @@ function encodeBase64(decoded_content)
 function decodeBase64(encoded_content)
 {
     return Buffer.from(encoded_content, 'base64').toString();
+}
+
+/**
+ * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
+ * 
+ * Create a Markdown-formatted Travis CI badge.
+ */
+function createTravisMarkdownBadge(owner, repo, branch) {
+	return `[![Build Status](https://travis-ci.org/${owner}/${repo}.svg?branch=${branch})](https://travis-ci.org/${owner}/${repo})`;
+}
+
+/**
+ * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
+ * 
+ * Create a Markdown-formatted Coveralls badge.
+ */
+function createCoverallsMarkdownBadge(owner, repo, branch) {
+	return `[![Coverage Status](https://coveralls.io/repos/github/${owner}/${repo}/badge.svg?branch=${branch})](https://coveralls.io/github/${owner}/${repo}?branch=${branch})`;
 }
 
 // Export methods for external use.
