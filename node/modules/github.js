@@ -271,18 +271,7 @@ function insertReadmeBadge(owner, repo, branch) {
 			createRepoContents(owner, repo, encodedBadges, 'README.md');
 		}
 	});
-
-		// 1.1. If README.md does not exist, create with badges.
-
-		// 1.2. If README.md exists, check for badge presence.
-		
-			// 1.2.1. If badges not present, insert at top.
-
-			// 1.2.2. If badges present, do nothing.
-
 }
-
-insertReadmeBadge('Timothy-Dement','COVERALLS-TEST','master');
 
 /**
  * Parse optional fields in a json
