@@ -48,6 +48,37 @@ function getRepoContents(owner, repo)
 }
 
 /**
+ * Get the contents of a specified file in a specified repo for a specified user.
+ * 
+ * @param {string} owner the name of the owner of the repository
+ * @param {string} repo the name of the repository holding the file
+ * @param {string} file the name of the file to be read
+ */
+function getFileContents(owner, repo, file) {
+
+	var options =
+	{
+		url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
+		method: 'Get',
+		headers:
+		{
+			'User-Agent': 'CiBot',
+			'Content-Type': 'application/json',
+			'Authorization': token
+		}
+	};
+
+	return new Promise(function(resolve, reject)
+	{
+		request(options, function(error, response, body)
+		{
+			var contents = JSON.parse(body);
+			resolve(contents);
+		});
+	});
+}
+
+/**
  * Get the SHA of a specified file in the root directory of a specified repository for a specified user.
  * 
  * @param {string} owner the name of the owner of the repository
@@ -56,10 +87,10 @@ function getRepoContents(owner, repo)
  */
 function getFileSha(owner, repo, file)
 {
-	var myMockData = mockData.createRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.createRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 	
     var options =
     {
@@ -163,10 +194,10 @@ function createRepoContents(owner, repo, content, file)
  */
 function resetRepoContents(owner, repo, content, file)
 {
-	var myMockData = mockData.resetRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.resetRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 
     getFileSha(owner, repo, file).then(function(data)
     {
@@ -200,14 +231,38 @@ function resetRepoContents(owner, repo, content, file)
 
 function insertReadmeBadge(owner, repo, branch) {
 
-	// 1. Check for existence of README.md in root directory.
+	var travisBadge = createTravisMarkdownBadge(owner, repo, branch);
+	var coverallsBadge = createCoverallsMarkdownBadge(owner, repo, branch);
 
-	getRepoContents(owner, repo).then(function(contents) {
+	getRepoContents(owner, repo).then(function(rootContents) {
 
-		var rootFileNames = _.pluck(contents, 'name');
+		var rootFileNames = _.pluck(rootContents, 'name');
 
 		if (_.contains(rootFileNames, 'README.md')) {
-			console.log('YOU GOT A README');
+
+			getFileContents(owner, repo, 'README.md').then(function(fileContents)
+			{
+				var encodedContents = fileContents.content.replace(/\n/g, '');
+				var decodedContents = decodeBase64(encodedContents);
+
+				if (!decodedContents.includes(travisBadge) && !decodedContents.includes(coverallsBadge)) {
+
+					decodedContents = travisBadge + "\n" + coverallsBadge + "\n\n" + decodedContents;
+					resetRepoContents(owner, repo, decodedContents, 'README.md');
+
+				} else if (!decodedContents.includes(travisBadge)) {
+
+					decodedContents = travisBadge + "\n\n" + decodedContents;
+					resetRepoContents(owner, repo, decodedContents, 'README.md');
+
+				} else if (!decodedContents.includes(coverallsBadge)) {
+
+					decodedContents = coverallsBadge + "\n\n" + decodedContents;
+					resetRepoContents(owner, repo, decodedContents, 'README.md');
+				}
+			});
+
+
 		} else {
 
 			var badges = createTravisMarkdownBadge(owner, repo, branch) + " " + createCoverallsMarkdownBadge(owner, repo, branch);
@@ -227,7 +282,7 @@ function insertReadmeBadge(owner, repo, branch) {
 
 }
 
-insertReadmeBadge('Timothy-Dement', 'COVERALLS-TEST', 'master');
+insertReadmeBadge('Timothy-Dement','COVERALLS-TEST','master');
 
 /**
  * Parse optional fields in a json
