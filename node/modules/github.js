@@ -229,13 +229,30 @@ function resetRepoContents(owner, repo, content, file)
     });
 }
 
-function insertReadmeBadge(owner, repo, branch) {
+/**
+ * Add a badge to the top of a README.md file.
+ * If no README.md file exists, one will be created.
+ * If the badge already exists in the file, it will not be duplicated.
+ * 
+ * PRECONDITION: The badge link passed is properly formatted and valid.
+ * 
+ * Travis CI format:
+ * 
+ *     [![Build Status](https://travis-ci.org/<owner>/<repo>.svg?branch=<branch>)](https://travis-ci.org/<owner>/<repo>)
+ * 
+ * Coveralls format:
+ * 
+ *     [![Coverage Status](https://coveralls.io/repos/github/<owner>/<repo>/badge.svg?branch=<branch>)](https://coveralls.io/github/<owner>/<repo>?branch=<branch>)
+ * 
+ * @param {*} owner the name of the owner
+ * @param {*} repo the name of the repository
+ * @param {*} branch the name of the branch
+ * @param {*} markdownBadge a string representing the badge link in Markdown format
+ */
+function insertReadmeBade(owner, repo, branch, markdownBadge) {
 
-	var travisBadge = createTravisMarkdownBadge(owner, repo, branch);
-	var coverallsBadge = createCoverallsMarkdownBadge(owner, repo, branch);
-
-	getRepoContents(owner, repo).then(function(rootContents) {
-
+	getRepoContents(owner, repo).then(function(rootContents)
+	{
 		var rootFileNames = _.pluck(rootContents, 'name');
 
 		if (_.contains(rootFileNames, 'README.md')) {
@@ -245,30 +262,16 @@ function insertReadmeBadge(owner, repo, branch) {
 				var encodedContents = fileContents.content.replace(/\n/g, '');
 				var decodedContents = decodeBase64(encodedContents);
 
-				if (!decodedContents.includes(travisBadge) && !decodedContents.includes(coverallsBadge)) {
-
-					decodedContents = travisBadge + "\n" + coverallsBadge + "\n\n" + decodedContents;
-					resetRepoContents(owner, repo, decodedContents, 'README.md');
-
-				} else if (!decodedContents.includes(travisBadge)) {
-
-					decodedContents = travisBadge + "\n\n" + decodedContents;
-					resetRepoContents(owner, repo, decodedContents, 'README.md');
-
-				} else if (!decodedContents.includes(coverallsBadge)) {
-
-					decodedContents = coverallsBadge + "\n\n" + decodedContents;
+				if (!decodedContents.includes(markdownBadge)) {
+					decodedContents = markdownBadge + "\n" + decodedContents;
 					resetRepoContents(owner, repo, decodedContents, 'README.md');
 				}
 			});
 
-
 		} else {
 
-			var badges = createTravisMarkdownBadge(owner, repo, branch) + " " + createCoverallsMarkdownBadge(owner, repo, branch);
-			var encodedBadges = encodeBase64(badges);
-
-			createRepoContents(owner, repo, encodedBadges, 'README.md');
+			var encodedBadge = encodeBase64(markdownBadge);
+			createRepoContents(owner, repo, encodedBadge, 'README.md');
 		}
 	});
 }
