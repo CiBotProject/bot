@@ -40,7 +40,7 @@ controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], 
   }
 
   tokenManager.addToken(messageArray[0], messageArray[1]);
-  bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored.`)
+  bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored:tada::tada::tada:.`)
 });
 //init repository
 controller.hears(['init travis'],['direct_message','direct_mention','mention'],function(bot,message){
@@ -61,20 +61,17 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
       globals.ownerMap[message.channel]=repoContent[0];
       //console.log(tokenManager.getToken())
       if(typeof tokenManager.getToken(repoContent[0]) === 'undefined'){
-        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found`);
-        bot.reply(message, "You can add token using \"*add-token* user=token\" command");
-      } else {
-        //create default coverageMap entry
-        globals.coverageMap[message.channel]=globals.defaultThreshold;
-
-        Travis.activate(repoContent[0],repoContent[1],function(data){
-          bot.reply(message,data.message);
-          bot.startConversation(message,askYamlCreation);
-        });
-
-        
+        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add token using \"*add-token user=token*\" command`);
+        return;
       }
-      
+
+      //create default coverageMap entry
+      globals.coverageMap[message.channel]=globals.defaultThreshold;
+
+      Travis.activate(repoContent[0],repoContent[1],function(data){
+        bot.reply(message,data.message);
+        bot.startConversation(message,askYamlCreation);
+      });
 
     }
     else{
