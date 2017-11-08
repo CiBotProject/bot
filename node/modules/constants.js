@@ -14,11 +14,15 @@ var message = {'status': '',    // Status, either FAILURE or SUCCESS as above
  * Get a message which is actually a clone of the object we are using
  */
 function getMessage() {
-  clone(message)
+  return clone(message)
 }
 
-exports.FAILURE = 'failure'
-exports.SUCCESS = 'success'
-exports.ERROR = 'error'
-exports.data = data;
-exports.message = getMessage()
+function getData(){
+  return clone(data);
+}
+
+exports.FAILURE = 'failure';
+exports.SUCCESS = 'success';
+exports.ERROR = 'error';
+exports.getDataStructure = getData;
+exports.getMessageStructure = getMessage;
