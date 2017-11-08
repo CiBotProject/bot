@@ -3,11 +3,14 @@ var Promise = require('bluebird');
 var request = require('request');
 var _ = require('underscore');
 
-var token = 'token ' + process.env.GITHUB_TOKEN;
+// var token = 'token ' + process.env.GITHUB_TOKEN;
+
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
+
 const mockData = require("./mocks/githubMock.json");
 
 var constants = require('../modules/constants.js');
+var tokenManager = require('../modules/tokenManager.js');
 
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
@@ -33,7 +36,7 @@ function getRepoContents(owner, repo)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         }
     };
 
@@ -64,7 +67,7 @@ function getFileContents(owner, repo, file) {
 		{
 			'User-Agent': 'CiBot',
 			'Content-Type': 'application/json',
-			'Authorization': token
+			'Authorization': 'token ' + tokenManager.getToken(owner)
 		}
 	};
 
@@ -100,7 +103,7 @@ function getFileSha(owner, repo, file)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         }
     };
 
@@ -140,7 +143,7 @@ function createRepoContents(owner, repo, content, file)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         },
         json:
         {
@@ -209,7 +212,7 @@ function resetRepoContents(owner, repo, content, file)
             {
                 'User-Agent': 'CiBot',
                 'Content-Type': 'application/json',
-                'Authorization': token
+                'Authorization': 'token ' + tokenManager.getToken(owner)
             },
             json:
             {
@@ -335,7 +338,7 @@ function checkUserInCollaborators(repo, owner, user) {
 		headers: {
 			"user-agent": "CiBot",
 			"content-type": "application/json",
-			"Authorization": token
+			"Authorization": 'token ' + tokenManager.getToken(owner)
 		}
 	};
 
@@ -478,7 +481,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 			headers: {
 				"user-agent": "CiBot",
 				"content-type": "application/json",
-				"Authorization": token
+				"Authorization": 'token ' + tokenManager.getToken(owner)
 			},
 			json: issue
 		};
