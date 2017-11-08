@@ -6,7 +6,7 @@ const tokenManager = require("./tokenManager");
 
 let token = "token ";
 let userAgent = "Travis CiBot";
-let githubToken = process.env.GITHUB_TOKEN;
+let githubToken = "";
 
 let urlRoot = "https://api.travis-ci.org";
 let supportedTechs = ["Node.js", "Ruby"];
@@ -19,12 +19,7 @@ let supportedTechs = ["Node.js", "Ruby"];
  * @param {String} reponame //github repo name
  */
 function activate(owner, reponame, callback){
-
-    //todo: first of all sync it.
-
-    // let repoNock = nock("https://api.travis-ci.org")
-    //     .get(`/repos/${owner}/${reponame}`)
-    //     .reply(200, data.get_repo);
+    
     authenticate(owner, function(){
         let options = {
             url: `${urlRoot}/repos/${owner}/${reponame}`,
@@ -39,8 +34,6 @@ function activate(owner, reponame, callback){
         var resp = constant.getMessageStructure();
     
         request(options, function(err, res, body){
-            // let hookNock = nock(urlRoot).put("/hooks")
-            //     .reply(200, data.put_hook);
             body = JSON.parse(body);
 
             options.url = `${urlRoot}/hooks`;
@@ -107,10 +100,6 @@ function listTechnologies(){
 function lastBuild(owner, reponame, callback){
 
     let resp = constant.getMessageStructure();
-
-    // let buildsNock = nock("https://api.travis-ci.org")
-    //     .get(`/repos/${owner}/${reponame}/builds`)
-    //     .reply(200, JSON.stringify(data.list_builds));
 
     let options = {
         url: `${urlRoot}/repos/${owner}/${reponame}/builds`,
@@ -185,8 +174,13 @@ function listBuilds(owner, reponame){
 
     return response;
 }
-
+/**
+ * The function authenticate user using github token
+ * @param {*} user 
+ * @param {*} callback 
+ */
 function authenticate(user, callback){
+    githubToken = tokenManager.getToken(user);
     let options = {
         url: `${urlRoot}/auth/github`,
         method: 'POST',
@@ -203,7 +197,6 @@ function authenticate(user, callback){
 
     request(options, function(err, res, body){
         if(err) throw err;
-        console.log(body);
         token += body.access_token;
         callback();
     })

@@ -3,6 +3,8 @@ var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
 var Github = require('./modules/github');
+var tokenManager = require("./modules/tokenManager");
+
 var controller = Botkit.slackbot({
   debug: false
   //include "log: false" to disable logging
@@ -23,12 +25,27 @@ var globals = {
 controller.spawn({
   token: process.env.SLACK_TOKEN,
 }).startRTM()
+//add token
+controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], function(bot, message){
+  let messageArray = message.text.split(' ');
+  if(messageArray.length < 2){
+    bot.reply(message, `The command syntax is *add-token user=token*`);
+    return;
+  }
+  messageArray = messageArray[1].split('=');
+  
+  if(messageArray.length < 2){
+    bot.reply(message, `The command syntax is *add-token user=token*`);
+    return;
+  }
 
+  tokenManager.addToken(messageArray[0], messageArray[1]);
+  bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored.`)
+});
 //init repository
 controller.hears(['init travis'],['direct_message','direct_mention','mention'],function(bot,message){
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('travis');
-
   if(messageArray.indexOf('help')===-1 && messageArray.indexOf('travis')!==-1 && messageArray.indexOf('init')!==-1){
     //repo name has to be word after init
     var repoString = null;
@@ -42,14 +59,22 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
 
       globals.repoMap[message.channel]=repoContent[1];
       globals.ownerMap[message.channel]=repoContent[0];
-      //create default coverageMap entry
-      globals.coverageMap[message.channel]=globals.defaultThreshold;
+      //console.log(tokenManager.getToken())
+      if(typeof tokenManager.getToken(repoContent[0]) === 'undefined'){
+        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found`);
+        bot.reply(message, "You can add token using \"*add-token* user=token\" command");
+      } else {
+        //create default coverageMap entry
+        globals.coverageMap[message.channel]=globals.defaultThreshold;
 
-      Travis.activate(repoContent[0],repoContent[1],function(data){
-        bot.reply(message,data.message);
-      });
+        Travis.activate(repoContent[0],repoContent[1],function(data){
+          bot.reply(message,data.message);
+          bot.startConversation(message,askYamlCreation);
+        });
 
-      bot.startConversation(message,askYamlCreation);
+        
+      }
+      
 
     }
     else{
@@ -75,7 +100,7 @@ askYamlCreation = function(response,convo){
 }
 
 askLanguageToUse = function(response,convo){
-  convo.ask('Which language do you want to use ? '+Travis.listTechnologies().data.body.join(','),function(response,convo){
+  convo.ask('Which language do you want to use? '+Travis.listTechnologies().data.body.join(',\t'),function(response,convo){
     var yamlStatus = Travis.createYaml(response.text);
     if(yamlStatus.status==='success'){
         //yamlStatus.data.body needs to be passed
