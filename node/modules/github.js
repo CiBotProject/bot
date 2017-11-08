@@ -269,7 +269,7 @@ function insertReadmeBadge(owner, repo, branch, markdownBadge) {
 
 					return new Promise(function(resolve, reject)
 					{
-						var message = constants.message;
+						var message = constants.getMessageStructure();
 						message['status'] = constants.SUCCESS;
 						message['message'] = `The badge was successfully added to the ${owner}/${repo} README.md file.`;
 						resolve(message);
@@ -279,7 +279,7 @@ function insertReadmeBadge(owner, repo, branch, markdownBadge) {
 
 					return new Promise(function(resolve, reject)
 					{
-						var message = constants.message;
+						var message = constants.getMessageStructure();
 						message['status'] = constants.FAILURE;
 						message['message'] = `The badge already exists in the ${owner}/${repo} README.md file.`;
 						reject(message);
@@ -294,7 +294,7 @@ function insertReadmeBadge(owner, repo, branch, markdownBadge) {
 
 			return new Promise(function(resolve, reject)
 			{
-				var message = constants.message;
+				var message = constants.getMessageStructure();
 				message['status'] = constants.SUCCESS;
 				message['message'] = `A README.md file was created for ${owner}/${repo} with the given badge.`;
 				resolve(message);
@@ -302,28 +302,6 @@ function insertReadmeBadge(owner, repo, branch, markdownBadge) {
 		}
 	});
 }
-
-var coverallsBadge = '[![Coverage Status](https://coveralls.io/repos/github/Timothy-Dement/COVERALLS-TEST/badge.svg?branch=master)](https://coveralls.io/github/Timothy-Dement/COVERALLS-TEST?branch=master)';
-var travisBadge = '[![Build Status](https://travis-ci.org/Timothy-Dement/COVERALLS-TEST.svg?branch=master)](https://travis-ci.org/Timothy-Dement/COVERALLS-TEST)';
-
-insertReadmeBadge('Timothy-Dement', 'COVERALLS-TEST', 'master', coverallsBadge)
-.then(function(response)
-{
-	console.log(response);
-})
-.catch(function(response)
-{
-	console.log(response);
-})
-
-// .then(function(response)
-// {
-// 	console.log(response);
-// })
-// .catch(function(response)
-// {
-// 	console.log(response);
-// });
 
 /**
  * Parse optional fields in a json
