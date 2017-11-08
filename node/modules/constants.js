@@ -6,6 +6,7 @@ var data = {'body': '',
 
 exports.FAILURE = 'failure'
 exports.SUCCESS = 'success'
+exports.ERROR = 'error'
 exports.message = {'status': '',    // Status, either FAILURE or SUCCESS as above
                   'message': '',    // Message to send back user
                   'data': data     // Data to pass to the next caller

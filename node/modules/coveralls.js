@@ -7,42 +7,48 @@ var data = require("../modules/mocks/coverallsMock.json");
 
 function getCoverageInfo(commitSHA, coverageThreshold)
 {
-	var mockCoverallsService = nock("https://coveralls.io")
-			.get("/builds/" + commitSHA + ".json")
-			.reply(200, JSON.stringify(data));
-
 
 	return new Promise(function(resolve, reject){
+
 		var urlRoot = "https://coveralls.io/builds/" + commitSHA + ".json";
 		var options = {
 			url: urlRoot
 		};
 		request(options, function(error, response, body){
-			var coverageInfoResponse = JSON.parse(body);
+			try{
+				var coverageInfoResponse = JSON.parse(body);
 
-			if(coverageInfoResponse.covered_percent < coverageThreshold)
-			{
-				var message = {
-				"status": constant.FAILURE,
-				"message": "Current coverage (" + coverageInfoResponse.covered_percent + "%) is below threshold (" + coverageThreshold + "%)",
-				"data": {
-						"body": coverageInfoResponse,
-						"blame": coverageInfoResponse.committer_name
-					}
-				};
-				resolve(message);			
-			}
-			else
-			{
-				var message = {
-					"status": constant.SUCCESS,
-					"message": "Current coverage is ("+ coverageInfoResponse.covered_percent + "%)",
+				if(coverageInfoResponse.covered_percent < coverageThreshold)
+				{
+					var message = {
+					"status": constant.FAILURE,
+					"message": "Current coverage (" + coverageInfoResponse.covered_percent + "%) is below threshold (" + coverageThreshold + "%)",
 					"data": {
 							"body": coverageInfoResponse,
 							"blame": coverageInfoResponse.committer_name
-					}
-				};
-				resolve(message);
+						}
+					};
+					resolve(message);			
+				}
+				else
+				{
+					var message = {
+						"status": constant.SUCCESS,
+						"message": "Current coverage is ("+ coverageInfoResponse.covered_percent + "%)",
+						"data": {
+								"body": coverageInfoResponse,
+								"blame": coverageInfoResponse.committer_name
+						}
+					};
+					resolve(message);
+				}
+			}
+			catch(ex){
+				var message = {
+						"status": constant.ERROR,
+						"message": "There was an error connecting to Coveralls"
+					};
+					resolve(message);
 			}
 		});
 	});
@@ -51,6 +57,11 @@ function getCoverageInfo(commitSHA, coverageThreshold)
 exports.getCoverageInfo = getCoverageInfo;
 
 /*
+
+Mocking Code:
+var mockCoverallsService = nock("https://coveralls.io")
+			.get("/builds/" + commitSHA + ".json")
+			.reply(200, JSON.stringify(data));
 
 Actual SERVICE code:
 
