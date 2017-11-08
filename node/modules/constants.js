@@ -10,8 +10,19 @@ var message = {'status': '',    // Status, either FAILURE or SUCCESS as above
         'data': data     // Data to pass to the next caller
       }
 
-exports.FAILURE = 'failure'
-exports.SUCCESS = 'success'
-exports.ERROR = 'error'
-exports.data = data;
-exports.message = clone(message)    // We do not want to reference the singleton message object, but a clone of it
+/**
+ * Get a message which is actually a clone of the object we are using
+ */
+function getMessage() {
+  return clone(message)
+}
+
+function getData(){
+  return clone(data);
+}
+
+exports.FAILURE = 'failure';
+exports.SUCCESS = 'success';
+exports.ERROR = 'error';
+exports.getDataStructure = getData;
+exports.getMessageStructure = getMessage;

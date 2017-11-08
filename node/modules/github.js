@@ -156,14 +156,14 @@ function createRepoContents(owner, repo, content, file)
         {
 			if(response.statusCode == '201')
 			{
-				var message = constants.message;
+				var message = constants.getMessageStructure();
 				message['status'] = constants.SUCCESS;
 				message['message'] = `The ${file} file was successfully created in ${owner}/${repo}`;
 				resolve(message);
 			}
 			else
 			{
-				var message = constants.message;
+				var message = constants.getMessageStructure();
 				message['status'] = constants.FAILURE;
 				message['message'] = `There was a problem creating the ${file} file in ${owner}/${repo}`;
 				reject(message);
@@ -460,7 +460,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 		{
 			// If we are trying to submit to a repo that the issue was not created for, error out.
 			if (iRepo !== repo || iOwner !== owner){
-				var message = constants.message;
+				var message = constants.getMessageStructure();
 				message['status'] = constants.FAILURE;
 				message['message'] = 'The issue was created for a different repository than it was submitted to.';
 				reject(message);
@@ -470,14 +470,14 @@ function createGitHubIssue(repo, owner, issuePromise) {
 			{
 				if(response.statusCode == '201')
 				{
-					var message = constants.message;
+					var message = constants.getMessageStructure();
 					message['status'] = constants.SUCCESS;
 					message['message'] = `Issue created with id ${body.id}`;
 					resolve(message);
 				}
 				else
 				{
-					var message = constants.message;
+					var message = constants.getMessageStructure();
 					message['status'] = constants.FAILURE;
 					message['message'] = 'An error was encountered when trying to create the issue';
 					reject(message);

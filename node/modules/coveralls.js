@@ -20,35 +20,35 @@ function getCoverageInfo(commitSHA, coverageThreshold)
 
 				if(coverageInfoResponse.covered_percent < coverageThreshold)
 				{
-					var message = {
-					"status": constant.FAILURE,
-					"message": "Current coverage (" + coverageInfoResponse.covered_percent + "%) is below threshold (" + coverageThreshold + "%)",
-					"data": {
+					var resp = constant.getMessageStructure();
+					
+					resp.status = constant.FAILURE;
+					resp.message = "Current coverage (" + coverageInfoResponse.covered_percent + "%) is below threshold (" + coverageThreshold + "%)";
+					resp.data = {
 							"body": coverageInfoResponse,
 							"blame": coverageInfoResponse.committer_name
-						}
-					};
-					resolve(message);			
+						};
+					
+					resolve(resp);			
 				}
 				else
 				{
-					var message = {
-						"status": constant.SUCCESS,
-						"message": "Current coverage is ("+ coverageInfoResponse.covered_percent + "%)",
-						"data": {
-								"body": coverageInfoResponse,
-								"blame": coverageInfoResponse.committer_name
-						}
+					var resp = constant.getMessageStructure();
+					resp.status = constant.SUCCESS;
+					resp.message = "Current coverage is ("+ coverageInfoResponse.covered_percent + "%)";
+					resp.data = {
+						"body": coverageInfoResponse,
+						"blame": coverageInfoResponse.committer_name
 					};
-					resolve(message);
+					resolve(resp);
 				}
 			}
 			catch(ex){
-				var message = {
-						"status": constant.ERROR,
-						"message": "There was an error connecting to Coveralls"
-					};
-					resolve(message);
+				var resp = constant.getMessageStructure();
+				resp.status = constant.ERROR;
+				resp.message = "There was an error connecting to Coveralls";
+				
+				resolve(resp);
 			}
 		});
 	});

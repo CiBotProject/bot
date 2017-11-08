@@ -45,7 +45,7 @@ function activate(owner, reponame, callback){
             'Authorization': token
         }
     }
-    var resp = constant.message;
+    var resp = constant.getMessageStructure();
 
     request(options, function(err, res, body){
         let hookNock = nock(urlRoot).put("/hooks")
@@ -70,7 +70,7 @@ function activate(owner, reponame, callback){
  * @param {String} technology 
  */
 function createYaml(technology){
-    let resp = constant.message;
+    let resp = constant.getMessageStructure();
 
     if(supportedTechs.indexOf(technology) < 0){
         resp.status = constant.FAILURE;
@@ -91,7 +91,7 @@ function createYaml(technology){
  */
 function listTechnologies(){
     
-    let response = constant.message;
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = "The list of supported technologies";
     response.data.body = supportedTechs;
@@ -106,7 +106,7 @@ function listTechnologies(){
  */
 function lastBuild(owner, reponame, callback){
 
-    let resp = constant.message;
+    let resp = constant.getMessageStructure();
 
     let buildsNock = nock("https://api.travis-ci.org")
         .get(`/repos/${owner}/${reponame}/builds`)
@@ -161,7 +161,7 @@ function listAccounts(){
 
     });
 
-    let response = constant.message;
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = accounts;
@@ -178,7 +178,7 @@ function listBuilds(owner, reponame){
     travis.repos(owner, reponame).builds.get(function(err, res){
 
     });
-    let response = constant.message;
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = builds;
