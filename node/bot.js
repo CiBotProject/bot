@@ -223,7 +223,7 @@ controller.hears(['help'],['direct_message','direct_mention','mention'],function
   else if(messageArray.indexOf('issue')!==-1){
     if (messageArray.indexOf('change')!==-1){
       bot.reply(message,helpCommands().existing_issue);
-    } 
+    }
     else {
       bot.reply(message,helpCommands().issue);
     }
@@ -303,19 +303,26 @@ askToCreateExistingIssue = function(response,convo){
 askToAssignPeople = function(response,convo){
   convo.ask('Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...',function(response,convo){
     var listOutput = response.text;
-    convo.say("I am going to create an issue titled *"+tempIssueName+"* and assign it to "+listOutput);
+    console.log(response.text);
+    if(!response.text.includes("@")){
+        convo.repeat();
+        convo.next();
+    }
+    else{
+      convo.say("I am going to create an issue titled *"+tempIssueName+"* and assign it to "+listOutput);
 
-    repo = globals.repoMap[response.channel];
-    owner = globals.ownerMap[response.channel];
+      repo = globals.repoMap[response.channel];
+      owner = globals.ownerMap[response.channel];
 
-    Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName))
-    .then(function(res){
-      convo.say("Issue has been created");
-    }).catch(function(res){
-      convo.say("Error creating issue");
-    });
+      Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName))
+      .then(function(res){
+        convo.say("Issue has been created");
+      }).catch(function(res){
+        convo.say("Error creating issue");
+      });
 
-    tempIssueName = "";
-    convo.next();
+      tempIssueName = "";
+      convo.next();
+    }
   });
 }
