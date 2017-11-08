@@ -5,9 +5,6 @@ const nock = require("nock");
 const request = require("request");
 const tokenManager = require("./tokenManager");
 
-tokenManager.addToken("igibek", "token");
-tokenManager.getToken("igibek");
-
 let token = "token ";
 let userAgent = "Travis CiBot";
 let githubToken = process.env.GITHUB_TOKEN;
