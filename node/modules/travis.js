@@ -3,24 +3,18 @@ const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
 const request = require("request");
+const tokenManager = require("./tokenManager");
+
+tokenManager.addToken("igibek", "token");
+tokenManager.getToken("igibek");
 
 let token = "token ";
+let userAgent = "Travis CiBot";
 let githubToken = process.env.GITHUB_TOKEN;
+
 let urlRoot = "https://api.travis-ci.org";
 let message = clone(constant.message);
 let supportedTechs = ["Node.js", "Ruby"];
-
-// lastBuild("test", "test", function(data){
-//     console.log(data);
-// });
-//authenticate();
-// activate("test", "test", function(data){
-//     console.log(data);
-// });
-//console.log(listTech());
-//console.log(config("Ruby"));
-//console.log(config("Huskell"));
-
 
 /**
  * This function:
@@ -33,36 +27,45 @@ function activate(owner, reponame, callback){
 
     //todo: first of all sync it.
 
-    let repoNock = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${reponame}`)
-        .reply(200, data.get_repo);
-    
-    let options = {
-        url: `${urlRoot}/repos/${owner}/${reponame}`,
-        method: 'GET',
-        headers:
-        {
-            'User-Agent': 'CiBot',
-            'Content-Type': 'application/json',
-            'Authorization': token
+    // let repoNock = nock("https://api.travis-ci.org")
+    //     .get(`/repos/${owner}/${reponame}`)
+    //     .reply(200, data.get_repo);
+    authenticate(owner, function(){
+        let options = {
+            url: `${urlRoot}/repos/${owner}/${reponame}`,
+            method: 'GET',
+            headers:
+            {
+                'User-Agent': userAgent,
+                'Content-Type': 'application/json',
+                'Authorization': token
+            }
         }
-    }
-    var resp = clone(constant.message);
-
-    request(options, function(err, res, body){
-        let hookNock = nock(urlRoot).put("/hooks")
-            .reply(200, data.put_hook);
-        
-        options.url = `${urlRoot}/hooks`;
-        options.method = "PUT";
+        var resp = clone(constant.message);
+    
         request(options, function(err, res, body){
+            // let hookNock = nock(urlRoot).put("/hooks")
+            //     .reply(200, data.put_hook);
+            body = JSON.parse(body);
 
-            resp.status = constant.SUCCESS;
-            resp.message = `Travis activated for ${owner}/${reponame}`;
-            resp.data.body = body;
-            callback(resp);
-        })
-    })
+            options.url = `${urlRoot}/hooks`;
+            options.method = "PUT";
+            options.json = {
+                hook:{
+                    id:body.id,
+                    active:true
+                }
+            }
+            request(options, function(err, res, body){
+    
+                resp.status = constant.SUCCESS;
+                resp.message = `Travis activated for ${owner}/${reponame}`;
+                resp.data.body = body;
+                callback(resp);
+            });
+        });
+    });    
+    
 
     
 }
@@ -110,16 +113,16 @@ function lastBuild(owner, reponame, callback){
 
     let resp = clone(constant.message);
 
-    let buildsNock = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${reponame}/builds`)
-        .reply(200, JSON.stringify(data.list_builds));
+    // let buildsNock = nock("https://api.travis-ci.org")
+    //     .get(`/repos/${owner}/${reponame}/builds`)
+    //     .reply(200, JSON.stringify(data.list_builds));
 
     let options = {
         url: `${urlRoot}/repos/${owner}/${reponame}/builds`,
         method: 'GET',
         headers:
         {
-            'User-Agent': 'CiBot',
+            'User-Agent': userAgent,
             'Content-Type': 'application/json',
             'Authorization': token
         }
@@ -188,14 +191,25 @@ function listBuilds(owner, reponame){
     return response;
 }
 
-function authenticate(){
-    travis.auth.github.post({
-        github_token: githubToken
-    }, function (err, res) {
-        // res => { 
-        //     access_token: XXXXXXX 
-        // } 
-        console.log(res.access_token);
-        
-    });
+function authenticate(user, callback){
+    let options = {
+        url: `${urlRoot}/auth/github`,
+        method: 'POST',
+        headers:
+        {
+            'User-Agent': userAgent,
+            'Content-Type': 'application/json',
+            'Authorization': token
+        },
+        json:{
+            github_token:githubToken
+        }
+    }
+
+    request(options, function(err, res, body){
+        if(err) throw err;
+        console.log(body);
+        token += body.access_token;
+        callback();
+    })
 }
