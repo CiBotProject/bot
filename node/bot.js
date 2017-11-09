@@ -49,33 +49,39 @@ app.listen(3000, () => console.log('Example app listening on port 3000!'));
 //Travis
 app.post("/travis",function(req,res){
   var payload = req.body.payload;
-  console.log(parseJSON(payload).commit);
-  console.log(parseJSON(payload).repository.name);
-  // var channel = globals.channelMap[req.body.data.repository];
-  //
-  // if(!globals.ownerMap[channel] && !globals.repoMap[channel]){
-  //   bot.reply(message,"Please run init travis <owner>/<repository> before running coveralls");
-  // }
-  // else{
-  //   Coveralls.getCoverageInfo(req.body.data.sha,globals.coverageMap[channel]).then(function(coverage){
-  //
-  //     if(coverage.status==='success')
-  //       bot.say({
-  //           text: coverage.message,
-  //           channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
-  //       });
-  //
-  //     if(coverage.status==='failure'){
-  //      var coverageBelowThreshold = globals.coverageMap[channel] - coverage.data.body.covered_percent;
-  //      bot.say({
-  //          text: `Coverage ${coverageBelowThreshold} percent below threshold. To create an issue please type "@${bot.identity.name} create issue"`,
-  //          channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
-  //      });
-  //
-  //      tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
-  //     }
-  //   });
-  // }
+  var commit = JSON.parse(payload).commit;
+  var repositoryName = JSON.parse(payload).repository.name;
+  var channel = globals.channelMap[repositoryName];
+  var status = JSON.parse(payload).state;
+  console.log(commit,repositoryName,channel,status);
+
+    if(status==="failed"){
+      bot.say({
+          text: `Build has failed. To create an issue please type "@${bot.identity.name} create issue"`,
+          channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
+      });
+      tempIssueName = `Build with commit_id ${JSON.parse(payload).commit_id} has failed`;
+    }
+    else{
+      Coveralls.getCoverageInfo(commit,globals.coverageMap[channel]).then(function(coverage){
+
+        if(coverage.status==='success')
+          bot.say({
+              text: coverage.message,
+              channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
+          });
+
+        if(coverage.status==='failure'){
+         var coverageBelowThreshold = globals.coverageMap[channel] - coverage.data.body.covered_percent;
+         bot.say({
+             text: `Coverage ${coverageBelowThreshold} percent below threshold. To create an issue please type "@${bot.identity.name} create issue"`,
+             channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
+         });
+
+         tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
+        }
+      });
+    }
 
   res.send("ack");
 });
@@ -125,6 +131,7 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
 
       globals.repoMap[message.channel]=repoContent[1];
       globals.ownerMap[message.channel]=repoContent[0];
+      globals.channelMap[repoContent[1]]=message.channel;
       //console.log(tokenManager.getToken())
       if(tokenManager.getToken(repoContent[0]) === null){
         bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add token using \"*add-token user=token*\" command`);
@@ -386,7 +393,7 @@ askToCreateNewIssue = function(response,convo){
 }
 
 askToCreateExistingIssue = function(response,convo){
-  convo.ask('Current issue title is set to *'+tempIssueName+'*.Do you want to change the title of the issue (yes/no)',function(response,convo){
+  convo.ask('Current issue title is set to *'+tempIssueName+'*. Do you want to change the title of the issue (yes/no)?',function(response,convo){
     if(response.text.toLowerCase()==="yes"){
       askToCreateNewIssue(response,convo);
     }
@@ -398,28 +405,26 @@ askToCreateExistingIssue = function(response,convo){
 }
 
 askToAssignPeople = function(response,convo){
-  convo.ask('Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...',function(response,convo){
+  convo.ask('Please enter a comma-separated list of github usernames to the issue. Ex user1,user2,user3...',function(response,convo){
     var listOutput = response.text;
     console.log(response.text);
-    if(!response.text.includes("@")){
-        convo.repeat();
-        convo.next();
-    }
-    else{
-      convo.say("I am going to create an issue titled *"+tempIssueName+"* and assign it to "+listOutput);
 
-      repo = globals.repoMap[response.channel];
-      owner = globals.ownerMap[response.channel];
+    var listOfassignees = response.split(",");
 
-      Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName))
-      .then(function(res){
-        convo.say("Issue has been created");
-      }).catch(function(res){
-        convo.say("Error creating issue");
-      });
+    convo.say("I am going to create an issue titled *"+tempIssueName+"* and assign it to "+listOutput);
 
-      tempIssueName = "";
-      convo.next();
-    }
+    repo = globals.repoMap[response.channel];
+    owner = globals.ownerMap[response.channel];
+
+    Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName))
+    .then(function(res){
+      convo.say("Issue has been created");
+    }).catch(function(res){
+      convo.say("Error creating issue");
+    });
+
+    tempIssueName = "";
+    convo.next();
+
   });
 }
