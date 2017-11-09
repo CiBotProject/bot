@@ -6,7 +6,6 @@ const request = require("request");
 let token = "token ";
 let githubToken = process.env.GITHUB_TOKEN;
 let urlRoot = "https://api.travis-ci.org";
-let message = constant.message;
 let supportedTechs = ["Node.js", "Ruby"];
 
 // lastBuild("test", "test", function(data){
@@ -46,7 +45,7 @@ function activate(owner, reponame, callback){
             'Authorization': token
         }
     }
-    var resp = constant.message;
+    var resp = constant.getMessageStructure();
 
     request(options, function(err, res, body){
         let hookNock = nock(urlRoot).put("/hooks")
@@ -55,7 +54,7 @@ function activate(owner, reponame, callback){
         options.url = `${urlRoot}/hooks`;
         options.method = "PUT";
         request(options, function(err, res, body){
-            
+
             resp.status = constant.SUCCESS;
             resp.message = `Travis activated for ${owner}/${reponame}`;
             resp.data.body = body;
@@ -69,9 +68,10 @@ function activate(owner, reponame, callback){
 /**
  * This function returns yaml file body for specified technology
  * @param {String} technology 
+ * @param {String} postUrl URL to post build notifications to
  */
-function createYaml(technology){
-    let resp = constant.message;
+function createYaml(technology, postUrl){
+    let resp = constant.getMessageStructure();
 
     if(supportedTechs.indexOf(technology) < 0){
         resp.status = constant.FAILURE;
@@ -92,7 +92,7 @@ function createYaml(technology){
  */
 function listTechnologies(){
     
-    let response = constant.message;
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = "The list of supported technologies";
     response.data.body = supportedTechs;
@@ -107,7 +107,7 @@ function listTechnologies(){
  */
 function lastBuild(owner, reponame, callback){
 
-    let resp = constant.message;
+    let resp = constant.getMessageStructure();
 
     let buildsNock = nock("https://api.travis-ci.org")
         .get(`/repos/${owner}/${reponame}/builds`)
@@ -162,7 +162,7 @@ function listAccounts(){
 
     });
 
-    let reponse = constant.message;
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = accounts;
@@ -179,7 +179,7 @@ function listBuilds(owner, reponame){
     travis.repos(owner, reponame).builds.get(function(err, res){
 
     });
-    let reponse = constant.message;
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = builds;

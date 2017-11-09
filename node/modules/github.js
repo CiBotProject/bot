@@ -1,10 +1,13 @@
 var nock = require('nock');
 var Promise = require('bluebird');
 var request = require('request');
+var _ = require('underscore');
 
 var token = 'token ' + process.env.GITHUB_TOKEN;
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
 const mockData = require("./mocks/githubMock.json");
+
+var constants = require('../modules/constants.js');
 
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
@@ -17,10 +20,10 @@ var issueBodySignature = '\n\nCreated by CiBot!';
  */
 function getRepoContents(owner, repo)
 {
-	var myMockData = mockData.getRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.getRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 	
     var options =
     {
@@ -39,9 +42,40 @@ function getRepoContents(owner, repo)
         request(options, function(error, response, body)
         {
             var contents = JSON.parse(body);
-            resolve(contents);
+			resolve(contents);
         });
     });
+}
+
+/**
+ * Get the contents of a specified file in a specified repo for a specified user.
+ * 
+ * @param {string} owner the name of the owner of the repository
+ * @param {string} repo the name of the repository holding the file
+ * @param {string} file the name of the file to be read
+ */
+function getFileContents(owner, repo, file) {
+
+	var options =
+	{
+		url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
+		method: 'Get',
+		headers:
+		{
+			'User-Agent': 'CiBot',
+			'Content-Type': 'application/json',
+			'Authorization': token
+		}
+	};
+
+	return new Promise(function(resolve, reject)
+	{
+		request(options, function(error, response, body)
+		{
+			var contents = JSON.parse(body);
+			resolve(contents);
+		});
+	});
 }
 
 /**
@@ -53,10 +87,10 @@ function getRepoContents(owner, repo)
  */
 function getFileSha(owner, repo, file)
 {
-	var myMockData = mockData.createRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.createRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 	
     var options =
     {
@@ -93,10 +127,10 @@ function getFileSha(owner, repo, file)
  */
 function createRepoContents(owner, repo, content, file)
 {
-	var myMockData = mockData.createRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.createRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .put(`/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 
     var options =
     {
@@ -112,7 +146,7 @@ function createRepoContents(owner, repo, content, file)
         {
             'path': file,
             'message': `[CiBot] Create ${file}`,
-            'content': `${encodeBase64(content)}`
+            'content': `${content}`
         }
     };
 
@@ -120,10 +154,33 @@ function createRepoContents(owner, repo, content, file)
     {
         request(options, function(error, response, body)
         {
-            resolve(body);
+			if(response.statusCode == '201')
+			{
+				var message = constants.getMessageStructure();
+				message['status'] = constants.SUCCESS;
+				message['message'] = `The ${file} file was successfully created in ${owner}/${repo}`;
+				resolve(message);
+			}
+			else
+			{
+				var message = constants.getMessageStructure();
+				message['status'] = constants.FAILURE;
+				message['message'] = `There was a problem creating the ${file} file in ${owner}/${repo}`;
+				reject(message);
+			}
         });
     });
 }
+
+// createRepoContents('timothy-dement','coveralls-test','# Test Content','.travis.yml')
+// .then(function(response)
+// {
+// 	console.log(response);
+// })
+// .catch(function(response)
+// {
+// 	console.log(response);
+// })
 
 /**
  * Overwrite the contents of a specified file in the root directory of a specified repository for a specified user.
@@ -137,10 +194,10 @@ function createRepoContents(owner, repo, content, file)
  */
 function resetRepoContents(owner, repo, content, file)
 {
-	var myMockData = mockData.resetRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.resetRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 
     getFileSha(owner, repo, file).then(function(data)
     {
@@ -170,6 +227,53 @@ function resetRepoContents(owner, repo, content, file)
             });
         });
     });
+}
+
+/**
+ * Add a badge to the top of a README.md file.
+ * If no README.md file exists, one will be created.
+ * If the badge already exists in the file, it will not be duplicated.
+ * 
+ * PRECONDITION: The badge link passed is properly formatted and valid.
+ * 
+ * Travis CI format:
+ * 
+ *     [![Build Status](https://travis-ci.org/<owner>/<repo>.svg?branch=<branch>)](https://travis-ci.org/<owner>/<repo>)
+ * 
+ * Coveralls format:
+ * 
+ *     [![Coverage Status](https://coveralls.io/repos/github/<owner>/<repo>/badge.svg?branch=<branch>)](https://coveralls.io/github/<owner>/<repo>?branch=<branch>)
+ * 
+ * @param {*} owner the name of the owner
+ * @param {*} repo the name of the repository
+ * @param {*} branch the name of the branch
+ * @param {*} markdownBadge a string representing the badge link in Markdown format
+ */
+function insertReadmeBade(owner, repo, branch, markdownBadge) {
+
+	getRepoContents(owner, repo).then(function(rootContents)
+	{
+		var rootFileNames = _.pluck(rootContents, 'name');
+
+		if (_.contains(rootFileNames, 'README.md')) {
+
+			getFileContents(owner, repo, 'README.md').then(function(fileContents)
+			{
+				var encodedContents = fileContents.content.replace(/\n/g, '');
+				var decodedContents = decodeBase64(encodedContents);
+
+				if (!decodedContents.includes(markdownBadge)) {
+					decodedContents = markdownBadge + "\n" + decodedContents;
+					resetRepoContents(owner, repo, decodedContents, 'README.md');
+				}
+			});
+
+		} else {
+
+			var encodedBadge = encodeBase64(markdownBadge);
+			createRepoContents(owner, repo, encodedBadge, 'README.md');
+		}
+	});
 }
 
 /**
@@ -328,9 +432,9 @@ function modifyIssueJSON(issue, optional) {
  * @param {Promise<json>} issue json of the issue to create
  */
 function createGitHubIssue(repo, owner, issuePromise) {
-	var myMockData = mockData.createGitHubIssue
+	var myMockData = mockData.createGitHubIssue.success
 	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/issues`)
+	.post(`/repos/${owner}/${repo}/issues`)
 	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 
 	// Delete the repo and owner from the issue json before sending to GitHub
@@ -356,17 +460,42 @@ function createGitHubIssue(repo, owner, issuePromise) {
 		{
 			// If we are trying to submit to a repo that the issue was not created for, error out.
 			if (iRepo !== repo || iOwner !== owner){
-				reject('The issue was created for a different repository than it was submitted to.');
+				var message = constants.getMessageStructure();
+				message['status'] = constants.FAILURE;
+				message['message'] = 'The issue was created for a different repository than it was submitted to.';
+				reject(message);
 			}
 			// Send a http request to url and specify a callback that will be called upon its return.
 			request(options, function (error, response, body) 
 			{
-				// var obj = JSON.parse(body);
-				resolve(body);
+				if(response.statusCode == '201')
+				{
+					var message = constants.getMessageStructure();
+					message['status'] = constants.SUCCESS;
+					message['message'] = `Issue created with id ${body.id}`;
+					resolve(message);
+				}
+				else
+				{
+					var message = constants.getMessageStructure();
+					message['status'] = constants.FAILURE;
+					message['message'] = 'An error was encountered when trying to create the issue';
+					reject(message);
+				}
 			});
 		});
 	})
 };
+
+// createGitHubIssue('coveralls-test','timothy-dement',createIssueJSON('coveralls-test','timothy-dement','BUG'))
+// .then(function(response)
+// {
+// 	console.log(response);
+// })
+// .catch(function(response)
+// {
+// 	console.log(response);
+// })
 
 /** TESTING CODE FOR ISSUES! */
 // var issue
@@ -409,6 +538,24 @@ function encodeBase64(decoded_content)
 function decodeBase64(encoded_content)
 {
     return Buffer.from(encoded_content, 'base64').toString();
+}
+
+/**
+ * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
+ * 
+ * Create a Markdown-formatted Travis CI badge.
+ */
+function createTravisMarkdownBadge(owner, repo, branch) {
+	return `[![Build Status](https://travis-ci.org/${owner}/${repo}.svg?branch=${branch})](https://travis-ci.org/${owner}/${repo})`;
+}
+
+/**
+ * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
+ * 
+ * Create a Markdown-formatted Coveralls badge.
+ */
+function createCoverallsMarkdownBadge(owner, repo, branch) {
+	return `[![Coverage Status](https://coveralls.io/repos/github/${owner}/${repo}/badge.svg?branch=${branch})](https://coveralls.io/github/${owner}/${repo}?branch=${branch})`;
 }
 
 // Export methods for external use.
