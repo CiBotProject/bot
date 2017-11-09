@@ -3,10 +3,13 @@ var Promise = require('bluebird');
 var request = require('request');
 var _ = require('underscore');
 
-var token = 'token ' + process.env.GITHUB_TOKEN;
+// var token = 'token ' + process.env.GITHUB_TOKEN;
+
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
+
 const mockData = require("./mocks/githubMock.json");
 
+var tokenManager = require('./tokenManager.js');
 const utils = require('./utils')
 const constants = require('./constants.js');
 
@@ -34,7 +37,7 @@ function getRepoContents(owner, repo)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         }
     };
 
@@ -65,7 +68,7 @@ function getFileContents(owner, repo, file) {
 		{
 			'User-Agent': 'CiBot',
 			'Content-Type': 'application/json',
-			'Authorization': token
+			'Authorization': 'token ' + tokenManager.getToken(owner)
 		}
 	};
 
@@ -101,7 +104,7 @@ function getFileSha(owner, repo, file)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         }
     };
 
@@ -141,7 +144,7 @@ function createRepoContents(owner, repo, content, file)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         },
         json:
         {
@@ -210,7 +213,7 @@ function resetRepoContents(owner, repo, content, file)
             {
                 'User-Agent': 'CiBot',
                 'Content-Type': 'application/json',
-                'Authorization': token
+                'Authorization': 'token ' + tokenManager.getToken(owner)
             },
             json:
             {
@@ -250,22 +253,41 @@ function resetRepoContents(owner, repo, content, file)
  * @param {*} branch the name of the branch
  * @param {*} markdownBadge a string representing the badge link in Markdown format
  */
-function insertReadmeBade(owner, repo, branch, markdownBadge) {
+function insertReadmeBadge(owner, repo, branch, markdownBadge) {
 
-	getRepoContents(owner, repo).then(function(rootContents)
+	return getRepoContents(owner, repo).then(function(rootContents)
 	{
 		var rootFileNames = _.pluck(rootContents, 'name');
 
 		if (_.contains(rootFileNames, 'README.md')) {
 
-			getFileContents(owner, repo, 'README.md').then(function(fileContents)
+			return getFileContents(owner, repo, 'README.md').then(function(fileContents)
 			{
 				var encodedContents = fileContents.content.replace(/\n/g, '');
 				var decodedContents = utils.decodeBase64(encodedContents);
 
 				if (!decodedContents.includes(markdownBadge)) {
+
 					decodedContents = markdownBadge + "\n" + decodedContents;
 					resetRepoContents(owner, repo, decodedContents, 'README.md');
+
+					return new Promise(function(resolve, reject)
+					{
+						var message = constants.getMessageStructure();
+						message['status'] = constants.SUCCESS;
+						message['message'] = `The badge was successfully added to the ${owner}/${repo} README.md file.`;
+						resolve(message);
+					});
+
+				} else {
+
+					return new Promise(function(resolve, reject)
+					{
+						var message = constants.getMessageStructure();
+						message['status'] = constants.FAILURE;
+						message['message'] = `The badge already exists in the ${owner}/${repo} README.md file.`;
+						reject(message);
+					});
 				}
 			});
 
@@ -273,6 +295,14 @@ function insertReadmeBade(owner, repo, branch, markdownBadge) {
 
 			var encodedBadge = utils.encodeBase64(markdownBadge);
 			createRepoContents(owner, repo, encodedBadge, 'README.md');
+
+			return new Promise(function(resolve, reject)
+			{
+				var message = constants.getMessageStructure();
+				message['status'] = constants.SUCCESS;
+				message['message'] = `A README.md file was created for ${owner}/${repo} with the given badge.`;
+				resolve(message);
+			});
 		}
 	});
 }
@@ -309,7 +339,7 @@ function checkUserInCollaborators(repo, owner, user) {
 		headers: {
 			"user-agent": "CiBot",
 			"content-type": "application/json",
-			"Authorization": token
+			"Authorization": 'token ' + tokenManager.getToken(owner)
 		}
 	};
 
@@ -452,7 +482,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 			headers: {
 				"user-agent": "CiBot",
 				"content-type": "application/json",
-				"Authorization": token
+				"Authorization": 'token ' + tokenManager.getToken(owner)
 			},
 			json: issue
 		};

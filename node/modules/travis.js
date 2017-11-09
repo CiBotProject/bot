@@ -34,7 +34,7 @@ function activate(owner, reponame, callback){
                     'Authorization': token
                 }
             }
-            
+
             console.log(options);
 
             request(options, function(err, res, body){
@@ -46,7 +46,7 @@ function activate(owner, reponame, callback){
                     return;
                 }
                 try{
-                    body = JSON.parse(body);        
+                    body = JSON.parse(body);
                 }
                 catch(e){
                     resp.status = constant.ERROR;
@@ -55,8 +55,8 @@ function activate(owner, reponame, callback){
                     callback(resp);
                     return;
                 }
-                
-                
+
+
                 options.url = `${urlRoot}/hooks`;
                 options.method = "PUT";
                 options.json = {
@@ -65,16 +65,16 @@ function activate(owner, reponame, callback){
                         active:true
                     }
                 }
-    
+
                 request(options, function(err, res, body){
-        
+
                     resp.status = constant.SUCCESS;
                     resp.message = `Travis activated for ${owner}/${reponame}`;
                     resp.data.body = body;
                     callback(resp);
                 });
             });
-        });  
+        });
     } catch(e){
         resp.status = constant.ERROR;
         resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
@@ -85,10 +85,10 @@ function activate(owner, reponame, callback){
 
 /**
  * This function returns yaml file body for specified technology
- * @param {String} technology 
+ * @param {String} technology
  * @param {String} postUrl URL to post build notifications to
  */
-function createYaml(technology, postUrl){
+function createYaml(technology, postUrl,owner,repo){
     let resp = constant.getMessageStructure();
 
     if(!supportedTechs.hasOwnProperty(technology.toLowerCase())){
@@ -98,8 +98,9 @@ function createYaml(technology, postUrl){
         return resp;
     }
     let techJson = supportedTechs[technology.toLocaleLowerCase()];
+
     if (postUrl !== undefined){
-        techJson.notifications.webhooks.urls.push(postUrl);
+        techJson.notifications.webhooks.urls.push(`${postUrl}/travis`);
     }
 
     let yaml = YAML.stringify( techJson );
@@ -129,8 +130,8 @@ function listTechnologies(){
 
 /**
  * This function returns the last build status for specified repo
- * @param {String} owner 
- * @param {String} repo 
+ * @param {String} owner
+ * @param {String} repo
  */
 function lastBuild(owner, reponame, callback){
 
@@ -146,7 +147,7 @@ function lastBuild(owner, reponame, callback){
             'Authorization': token
         }
     }
-    
+
     request(options, function(err, res, body){
         //console.log(body);
         let json = JSON.parse(body);
@@ -160,7 +161,7 @@ function lastBuild(owner, reponame, callback){
                 resp.status = constant.FAILURE;
                 resp.message = `The last build for ${owner}/${reponame} failed`;
                 resp.data.body = path;
-                resp.data.blame.push(path.author_email); 
+                resp.data.blame.push(path.author_email);
                 callback(resp);
             });
         } else if(lastBuildState === 'success'){
@@ -214,8 +215,8 @@ function listBuilds(owner, reponame){
 }
 /**
  * The function authenticate user using github token
- * @param {*} user 
- * @param {*} callback 
+ * @param {*} user
+ * @param {*} callback
  */
 function authenticate(user, callback){
     githubToken = tokenManager.getToken(user);
