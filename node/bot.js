@@ -35,35 +35,60 @@ var globals = {
   repoMap:{},//channel:repo name
   ownerMap:{},//channel:owner name
   yamlMap:{},//channel:true/false [check if yaml exisits or not]
+  channelMap:{},//repo: channel name
   defaultThreshold:95,
 };
 //start the local webserver
-app.post("/",function(req,res){
-  console.log(req.body);
-  res.send("Hello world");
-});
-
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
 
 //web server endpoints
 //Travis
 app.post("/travis",function(req,res){
-  console.log(parseJSON(req.body));
+
+  var channel = globals.channelMap[req.body.data.repository];
+
+  if(!globals.ownerMap[channel] && !globals.repoMap[channel]){
+    bot.reply(message,"Please run init travis <owner>/<repository> before running coveralls");
+  }
+  else{
+    Coveralls.getCoverageInfo(req.body.data.sha,globals.coverageMap[channel]).then(function(coverage){
+
+      if(coverage.status==='success')
+        bot.say({
+            text: coverage.message,
+            channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
+        });
+
+      if(coverage.status==='failure'){
+       var coverageBelowThreshold = globals.coverageMap[channel] - coverage.data.body.covered_percent;
+       bot.say({
+           text: `Coverage ${coverageBelowThreshold} percent below threshold. To create an issue please type "@${bot.identity.name} create issue"`,
+           channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
+       });
+
+       tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
+      }
+    });
+  }
+
   res.send("ack");
 });
 
 
 
+
 // connect the bot to a stream of messages
-controller.spawn({
+var bot = controller.spawn({
   token: process.env.SLACK_TOKEN,
 }).startRTM()
 
+
 //init repository
 controller.hears(['init travis'],['direct_message','direct_mention','mention'],function(bot,message){
+
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('travis');
-  console.log(tunnel.url);
+
   if(messageArray.indexOf('help')===-1 && messageArray.indexOf('travis')!==-1 && messageArray.indexOf('init')!==-1){
     //repo name has to be word after init
     var repoString = null;
@@ -77,6 +102,8 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
 
       globals.repoMap[message.channel]=repoContent[1];
       globals.ownerMap[message.channel]=repoContent[0];
+      globals.channelMap[repoContent[1]]=message.channel;
+      console.log(globals.channelMap);
       //create default coverageMap entry
       globals.coverageMap[message.channel]=globals.defaultThreshold;
 
@@ -181,13 +208,15 @@ controller.hears(['test last build'],['direct_message','direct_mention','mention
 });
 
 //testing issue creation
-controller.hears(['test issue'],['direct_message','direct_mention','mention'],function(bot,message){
+controller.hears(['create issue'],['direct_message','direct_mention','mention'],function(bot,message){
   if(!globals.ownerMap[message.channel] && !globals.repoMap[message.channel]){
     bot.reply(message,"Please run init travis <owner>/<repository> before testing issue creation");
   }
   else{
-    tempIssueName="";
-    issueCreationConversation(bot,message);
+    if(tempIssueName!=="")
+      issueCreationConversation(bot,message,tempIssueName);
+    else
+      issueCreationConversation(bot,message,"");
   }
 });
 
@@ -296,7 +325,7 @@ function issueCreationConversation(bot,message,issueTitle){
   bot.startConversation(message,askToCreateIssue);
 }
 //helper functions
-askToCreateIssue = function(response,convo){
+/*askToCreateIssue = function(response,convo){
   convo.ask('Do you want to create an issue (yes/no)?',function(response,convo){
     if(response.text.toLowerCase()==="yes"){
       if(tempIssueName===""){
@@ -311,6 +340,14 @@ askToCreateIssue = function(response,convo){
     }
     convo.next();
   });
+}*/
+askToCreateIssue = function(response,convo){
+    if(tempIssueName===""){
+      askToCreateNewIssue(response,convo);
+    }
+    else{
+      askToCreateExistingIssue(response,convo);
+    }
 }
 
 askToCreateNewIssue = function(response,convo){
