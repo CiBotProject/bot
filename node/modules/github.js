@@ -379,11 +379,21 @@ function createIssueJSON(repo, owner, title, optional) {
 		if (users.length === 0){
 			if (breaker !== null) {
 				if (typeof(breaker) === "string"){
-					issue.fallbackAssignee = true;
-					issue.assignees.push(breaker);
+					// Sanity check to make sure that the breaker is valid
+					checkUserInCollaborators(repo, owner, breaker).then(function(result){
+						if (result.valid) {
+							issue.fallbackAssignee = true;
+							issue.assignees.push(breaker);
+						}
+					});
 				} else {
 					// We have been passed a list of assignees, likely from modifying the issue
-					issue.assignees = breaker;
+					var breakers = Promise.all(breaker.map(validUserFunction));
+					breakers.then(function(result){
+						if (result.valid){
+							issue.assignees.push(result.user);
+						}
+					});
 				}
 			}
 		} else {
@@ -502,9 +512,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 					}
 					assignees += 'The issue has been assigned to: '
 					issue.assignees.forEach(function(user){
-						if (user.valid){
-							assignees += `${user}, `;
-						}
+						assignees += `${user}, `;
 					})
 					assignees = assignees.substring(0, assignees.length - 2) + '.'
 					var message = constants.getMessageStructure();
