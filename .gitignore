@@ -1,5 +1,5 @@
 # TOKEN PART
-node/data/tokens.json
+**/github_token_storage
 
 # NODE PART
 .vscode
