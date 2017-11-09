@@ -376,7 +376,7 @@ function createIssueJSON(repo, owner, title, optional) {
 				"bug", "CiBot"
 			]
 		}
-		if (users.length !== 0){
+		if (users.length === 0){
 			if (breaker !== null) {
 				if (typeof(breaker) === "string"){
 					issue.fallbackAssignee = true;
