@@ -10,6 +10,8 @@ const app = express();
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
 
+var myUrl = null;
+
 var controller = Botkit.slackbot({
   debug: false
   //include "log: false" to disable logging
@@ -22,6 +24,7 @@ var tunnel = localtunnel(3000, function(err, tunnel) {
     }// the assigned public url for your tunnel
     // i.e. https://abcdefgjhij.localtunnel.me
     console.log(tunnel.url);
+    myUrl = tunnel.url;
 });
 
 tunnel.on('close', function() {
@@ -110,8 +113,8 @@ askYamlCreation = function(response,convo){
 }
 
 askLanguageToUse = function(response,convo){
-  convo.ask('Which language do you want to use ? '+Travis.listTechnologies().data.body.join(','),function(response,convo){
-    var yamlStatus = Travis.createYaml(response.text);
+  convo.ask('Which language do you want to use? '+Travis.listTechnologies().data.body.join(', '),function(response,convo){
+    var yamlStatus = Travis.createYaml(response.text, myUrl);
     if(yamlStatus.status==='success'){
         //yamlStatus.data.body needs to be passed
         convo.say("I am pushing the yaml file to the github repository ");

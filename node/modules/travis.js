@@ -2,11 +2,14 @@ const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
 const request = require("request");
+const YAML = require("json2yaml")
+
+const supportedTechs = require("./travisData/yamlLanguages.json")
+const utils = require('./utils')
 
 let token = "token ";
 let githubToken = process.env.GITHUB_TOKEN;
 let urlRoot = "https://api.travis-ci.org";
-let supportedTechs = ["Node.js", "Ruby"];
 
 // lastBuild("test", "test", function(data){
 //     console.log(data);
@@ -73,16 +76,22 @@ function activate(owner, reponame, callback){
 function createYaml(technology, postUrl){
     let resp = constant.getMessageStructure();
 
-    if(supportedTechs.indexOf(technology) < 0){
+    if(!supportedTechs.hasOwnProperty(technology.toLowerCase())){
         resp.status = constant.FAILURE;
         resp.message = `Sorry I can't create yaml for ${technology}`;
         resp.data = null;
         return resp;
     }
-    
+    let techJson = supportedTechs[technology.toLocaleLowerCase()];
+    if (postUrl !== undefined){
+        techJson.notifications.webhooks.push(postUrl);
+    }
+
+    let yaml = YAML.stringify( techJson );
+    console.log(yaml)
     resp.status = constant.SUCCESS;
     resp.message = `The content of yaml file for ${technology}`;
-    resp.data.body = "bGFuZ3VhZ2U6IG5vZGVfanMKbm9kZV9qczoKLSAic3RhYmxlIgphZnRlcl9zdWNjZXNzOgotIG5wbSBydW4gY292ZXJhbGxz";
+    resp.data.body = utils.encodeBase64(yaml);
 
     return resp;
 }
@@ -91,11 +100,14 @@ function createYaml(technology, postUrl){
  * This function returns list of supported technologies in JSON format
  */
 function listTechnologies(){
-    
+    let available = [];
+    for (k in supportedTechs) {
+        available.push(k.charAt(0).toUpperCase() + k.slice(1));
+    }
     let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = "The list of supported technologies";
-    response.data.body = supportedTechs;
+    response.data.body = available;
 
     return response;
 }
