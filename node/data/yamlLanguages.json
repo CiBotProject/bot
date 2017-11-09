@@ -8,7 +8,13 @@
             "npm run coveralls"
         ],
         "notifications": {
-            "webhooks": [ ]
+            "webhooks": {
+                "urls": [ ],
+                "on_success": "always",
+                "on_failure": "always",
+                "on_cancel": "never",
+                "on_error": "never"
+            }
         }
     },
     "ruby": {
@@ -22,7 +28,13 @@
             "npm run coveralls"
         ],
         "notifications": {
-            "webhooks": [ ]
+            "webhooks": {
+                "urls": [ ],
+                "on_success": "always",
+                "on_failure": "always",
+                "on_cancel": "never",
+                "on_error": "never"
+            }
         }
     }
 }
