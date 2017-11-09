@@ -34,8 +34,16 @@ function activate(owner, reponame, callback){
         var resp = constant.getMessageStructure();
     
         request(options, function(err, res, body){
+            if(err) {
+                resp.status = constant.ERROR;
+                resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
+                resp.data.body = err;
+                callback(resp);
+                return;
+            }
+            console.log(body);
             body = JSON.parse(body);
-
+            
             options.url = `${urlRoot}/hooks`;
             options.method = "PUT";
             options.json = {
@@ -44,6 +52,9 @@ function activate(owner, reponame, callback){
                     active:true
                 }
             }
+            
+            console.log(options);
+
             request(options, function(err, res, body){
     
                 resp.status = constant.SUCCESS;
@@ -65,17 +76,26 @@ function activate(owner, reponame, callback){
 function createYaml(technology){
     let resp = constant.getMessageStructure();
 
-    if(supportedTechs.indexOf(technology) < 0){
+    if(!supportedTechs.includes(technology)){
         resp.status = constant.FAILURE;
         resp.message = `Sorry I can't create yaml for ${technology}`;
         resp.data = null;
         return resp;
     }
+
+    let yaml = "";
+    switch(technology){
+        case 'Node.js':
+            yaml = "bGFuZ3VhZ2U6IG5vZGVfanMKbm9kZV9qczoKLSAic3RhYmxlIgphZnRlcl9zdWNjZXNzOgotIG5wbSBydW4gY292ZXJhbGxz";
+            break;
+        case 'Ruby':
+            yaml = "bGFuZ3VhZ2U6IHJ1YnkNCnJ2bToNCiAtIDIuMg0KIC0ganJ1YnkNCiAtIHJieC0z";
+    }
     
     resp.status = constant.SUCCESS;
     resp.message = `The content of yaml file for ${technology}`;
-    resp.data.body = "bGFuZ3VhZ2U6IG5vZGVfanMKbm9kZV9qczoKLSAic3RhYmxlIgphZnRlcl9zdWNjZXNzOgotIG5wbSBydW4gY292ZXJhbGxz";
-
+    resp.data.body = yaml;
+    console.log(resp);
     return resp;
 }
 
