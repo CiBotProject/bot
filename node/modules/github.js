@@ -90,12 +90,7 @@ function getFileContents(owner, repo, file) {
  * @param {string} file the name of the file whose SHA will be returned
  */
 function getFileSha(owner, repo, file)
-{
-	// var myMockData = mockData.createRepoContents.success
-	// var mockMe = nock(urlRoot)
-	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-	
+{	
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
@@ -131,11 +126,6 @@ function getFileSha(owner, repo, file)
  */
 function createRepoContents(owner, repo, content, file)
 {
-	// var myMockData = mockData.createRepoContents.success
-	// var mockMe = nock(urlRoot)
-	// .put(`/repos/${owner}/${repo}/contents/${file}`)
-	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
@@ -198,11 +188,6 @@ function createRepoContents(owner, repo, content, file)
  */
 function resetRepoContents(owner, repo, content, file)
 {
-	// var myMockData = mockData.resetRepoContents.success
-	// var mockMe = nock(urlRoot)
-	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-
     getFileSha(owner, repo, file).then(function(data)
     {
         var options =
@@ -327,12 +312,7 @@ function opt(options, name, defaultValue) {
  * @param {*} owner owner of the repository
  * @param {*} user user to test for membership in collaborators
  */
-function checkUserInCollaborators(repo, owner, user) {
-	var myMockData = mockData.checkUserInCollaborators.success
-	var mockMe = nock(urlRoot)
-	.get(`/repos/${owner}/${repo}/collaborators/${user}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-	
+function checkUserInCollaborators(repo, owner, user) {	
 	var options = {
 		url: `${urlRoot}/repos/${owner}/${repo}/collaborators/${user}`,
 		method: 'GET',
@@ -366,6 +346,7 @@ function checkUserInCollaborators(repo, owner, user) {
  * @param {?json} optional json object containing the optional fields (body, assignees)
  * @param {?string} optional.body The body of the issue to be created
  * @param {?string[]} optional.assignees A list of individuals to assign the issue to
+ * @param {?string[]} optional.breaker The id of the breaker causing the issue. Will be assigned if the assignees fail
  * @returns {json} object specifying the issue to be created
  */
 function createIssueJSON(repo, owner, title, optional) {
@@ -373,7 +354,8 @@ function createIssueJSON(repo, owner, title, optional) {
 		optional = {};
 	}
 	var body = opt(optional, 'body', '') + issueBodySignature;
-	var assignees = opt(optional, 'assignees', [])
+	var assignees = opt(optional, 'assignees', []);
+	var breaker = opt(optional, 'breaker', null);
 
 	// Determine if all of the users are valid collaborators for the project
 	var validUserFunction = function(user){
@@ -393,11 +375,22 @@ function createIssueJSON(repo, owner, title, optional) {
 				"bug", "CiBot"
 			]
 		}
-		users.forEach(function(user){
-			if (user.valid){
-				issue.assignees.push(user.user);
+		if (users.length !== 0){
+			if (breaker !== null) {
+				if (typeof(breaker) === "string"){
+					issue.assignees.push(breaker);
+				} else {
+					// We have been passed a list of assignees
+					issue.assignees = breaker;
+				}
 			}
-		})
+		} else {
+			users.forEach(function(user){
+				if (user.valid){
+					issue.assignees.push(user.user);
+				}
+			})
+		}
 		return issue;
 	});
 };
@@ -413,6 +406,7 @@ function createIssueJSON(repo, owner, title, optional) {
  * @param {?string} optional.title new issue title
  * @param {?string} optional.body new body content
  * @param {?string[]} optional.assignees new assignees
+ * @param {?string[]} optional.breaker The id of the breaker causing the issue. Will be assigned if the assignees fail
  * @returns {Promise<json>} object specifying the issue to be created
  */
 function modifyIssueJSON(issue, optional) {
@@ -446,10 +440,11 @@ function modifyIssueJSON(issue, optional) {
 			resolvedIssue.body = resolvedIssue.body.replace(re, '');
 			resolvedIssue.repo = optional.repo == undefined ? resolvedIssue.repo : optional.repo;
 			resolvedIssue.owner = optional.owner == undefined ? resolvedIssue.owner : optional.owner;
+			resolvedIssue.breaker = optional.breaker == undefined ? resolvedIssue.assignees : optional.breaker;
 			return createIssueJSON(resolvedIssue.repo, 
 				resolvedIssue.owner, 
 				resolvedIssue.title, 
-				{'body': resolvedIssue.body, 'assignees':resolvedIssue.assignees});
+				{'body': resolvedIssue.body, 'assignees':resolvedIssue.assignees, 'breaker':resolvedIssue.breaker});
 		}
 		return resolvedIssue;
 	});
@@ -463,11 +458,6 @@ function modifyIssueJSON(issue, optional) {
  * @param {Promise<json>} issue json of the issue to create
  */
 function createGitHubIssue(repo, owner, issuePromise) {
-	var myMockData = mockData.createGitHubIssue.success
-	var mockMe = nock(urlRoot)
-	.post(`/repos/${owner}/${repo}/issues`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-
 	// Delete the repo and owner from the issue json before sending to GitHub
 	// but keep track of it to make sure that we have a json file that can be submitted here
 	return issuePromise.then(function(issue){
