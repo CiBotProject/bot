@@ -68,8 +68,9 @@ function activate(owner, reponame, callback){
 /**
  * This function returns yaml file body for specified technology
  * @param {String} technology 
+ * @param {String} postUrl URL to post build notifications to
  */
-function createYaml(technology){
+function createYaml(technology, postUrl){
     let resp = constant.getMessageStructure();
 
     if(supportedTechs.indexOf(technology) < 0){
