@@ -1,0 +1,28 @@
+{
+    "node.js": {
+        "language": "node_js",
+        "node_js": [
+            "stable"
+        ],
+        "after_success": [
+            "npm run coveralls"
+        ],
+        "notifications": {
+            "webhooks": [ ]
+        }
+    },
+    "ruby": {
+        "language": "ruby",
+        "rvm": [
+            "2.2",
+            "jruby",
+            "rbx-3"
+        ],
+        "after_success": [
+            "npm run coveralls"
+        ],
+        "notifications": {
+            "webhooks": [ ]
+        }
+    }
+}

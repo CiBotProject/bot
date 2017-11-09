@@ -1,14 +1,35 @@
 
+var localtunnel  = require('localtunnel');
 var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
 var Github = require('./modules/github');
 var tokenManager = require("./modules/tokenManager");
+var bodyParser = require('body-parser')
+const express = require('express');
+const app = express();
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(bodyParser.json());
+
+var myUrl = null;
 
 var controller = Botkit.slackbot({
   debug: false
   //include "log: false" to disable logging
   //or a "logLevel" integer from 0 to 7 to adjust logging verbosity
+});
+
+var tunnel = localtunnel(3000, function(err, tunnel) {
+    if (err){
+      console.log(err);
+    }// the assigned public url for your tunnel
+    // i.e. https://abcdefgjhij.localtunnel.me
+    console.log(tunnel.url);
+    myUrl = tunnel.url;
+});
+
+tunnel.on('close', function() {
+    // tunnels are closed
 });
 
 var tempIssueName = "";
@@ -20,6 +41,22 @@ var globals = {
   yamlMap:{},//channel:true/false [check if yaml exisits or not]
   defaultThreshold:95,
 };
+//start the local webserver
+app.post("/",function(req,res){
+  console.log(req.body);
+  res.send("Hello world");
+});
+
+app.listen(3000, () => console.log('Example app listening on port 3000!'));
+
+//web server endpoints
+//Travis
+app.post("/travis",function(req,res){
+  console.log(parseJSON(req.body));
+  res.send("ack");
+});
+
+
 
 // connect the bot to a stream of messages
 controller.spawn({
@@ -46,6 +83,7 @@ controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], 
 controller.hears(['init travis'],['direct_message','direct_mention','mention'],function(bot,message){
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('travis');
+  console.log(tunnel.url);
   if(messageArray.indexOf('help')===-1 && messageArray.indexOf('travis')!==-1 && messageArray.indexOf('init')!==-1){
     //repo name has to be word after init
     var repoString = null;
@@ -97,8 +135,8 @@ askYamlCreation = function(response,convo){
 }
 
 askLanguageToUse = function(response,convo){
-  convo.ask('Which language do you want to use? '+Travis.listTechnologies().data.body.join(',\t'),function(response,convo){
-    var yamlStatus = Travis.createYaml(response.text);
+  convo.ask('Which language do you want to use? '+Travis.listTechnologies().data.body.join(', '),function(response,convo){
+    var yamlStatus = Travis.createYaml(response.text, myUrl);
     if(yamlStatus.status==='success'){
         //yamlStatus.data.body needs to be passed
         convo.say("I am pushing the yaml file to the github repository ");
@@ -209,7 +247,6 @@ controller.hears(['test coveralls','test Coveralls'],['direct_message','direct_m
        var coverageBelowThreshold = globals.coverageMap[message.channel] - coverage.data.body.covered_percent;
        issueCreationConversation(bot,message,`Coverage ${coverageBelowThreshold} percent below threshold`);
       }
-
     });
   }
 });

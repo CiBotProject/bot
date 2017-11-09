@@ -9,8 +9,9 @@ var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.g
 
 const mockData = require("./mocks/githubMock.json");
 
-var constants = require('../modules/constants.js');
-var tokenManager = require('../modules/tokenManager.js');
+var tokenManager = require('./tokenManager.js');
+const utils = require('./utils')
+const constants = require('./constants.js');
 
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
@@ -217,7 +218,7 @@ function resetRepoContents(owner, repo, content, file)
             json:
             {
                 'message': `[CiBot] Reset ${file}`,
-                'content': `${encodeBase64(content)}`,
+                'content': `${utils.encodeBase64(content)}`,
                 'sha': `${data}`
             }
         };
@@ -263,7 +264,7 @@ function insertReadmeBadge(owner, repo, branch, markdownBadge) {
 			return getFileContents(owner, repo, 'README.md').then(function(fileContents)
 			{
 				var encodedContents = fileContents.content.replace(/\n/g, '');
-				var decodedContents = decodeBase64(encodedContents);
+				var decodedContents = utils.decodeBase64(encodedContents);
 
 				if (!decodedContents.includes(markdownBadge)) {
 
@@ -292,7 +293,7 @@ function insertReadmeBadge(owner, repo, branch, markdownBadge) {
 
 		} else {
 
-			var encodedBadge = encodeBase64(markdownBadge);
+			var encodedBadge = utils.encodeBase64(markdownBadge);
 			createRepoContents(owner, repo, encodedBadge, 'README.md');
 
 			return new Promise(function(resolve, reject)
@@ -549,26 +550,6 @@ function createGitHubIssue(repo, owner, issuePromise) {
 //    MISCELLANEOUS METHODS    //
 //                             //
 /////////////////////////////////
-
-/**
- * Encode the given parameter using base64 scheme.
- * 
- * @param {*} decoded_content content to encode.
- */
-function encodeBase64(decoded_content)
-{
-    return Buffer.from(decoded_content).toString('base64');
-}
-
-/**
- * Decode the given parameter using base64 scheme.
- * 
- * @param {*} encoded_content content to decode.
- */
-function decodeBase64(encoded_content)
-{
-    return Buffer.from(encoded_content, 'base64').toString();
-}
 
 /**
  * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE

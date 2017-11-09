@@ -1,19 +1,17 @@
+const store = require("data-store")("tokens", {cwd: "data"});
 var manager = {};
 
-let tokens = {};
-
 module.exports = manager;
-
 /**
  * retrieves the token for specified owner. 
  * If the token is not stored it will return "undefined"
  * @param {String} owner //owner for which token is asked.
  */
 manager.getToken = function(owner){
-    if(tokens.hasOwnProperty(owner)){
-        console.log(tokens[owner]);
+    if(store.has(owner)){
+        return store.get(owner);
     }
-    return tokens[owner];
+    return null;
 }
 
 /**
@@ -22,5 +20,6 @@ manager.getToken = function(owner){
  * @param {String} token //token to be stored
  */
 manager.addToken = function(owner, token){
-    tokens[owner] = token;    
+    store.set(owner, token);
 }
+
