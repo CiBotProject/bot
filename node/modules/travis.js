@@ -170,11 +170,15 @@ function lastBuild(owner, reponame, callback){
     });
 }
 
+function badge(owner, repo){
+    return `[![Build Status](https://img.shields.io/travis/${owner}/${repo}.svg)](https://travis-ci.org/${owner}/${repo})`
+}
+
 module.exports.activate = activate;//activates travis for repo. Params: owner, reponame, callback
 module.exports.lastBuild = lastBuild;//returns last build state. Params: owner, reponame, callback
 module.exports.createYaml = createYaml;//create the yaml for specified technology. Params: technology
 module.exports.listTechnologies = listTechnologies;//list supported technologies. No params.
-
+module.exports.badge = badge;
 function listAccounts(){
     let accounts = nock("https://api.travis-ci.org")
         .get("/accounts")
@@ -191,7 +195,6 @@ function listAccounts(){
 
     return response;
 }
-
 
 function listBuilds(owner, reponame){
     let builds = nock("https://api.travis-ci.org")
