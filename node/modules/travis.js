@@ -6,9 +6,12 @@ const tokenManager = require("./tokenManager");
 
 let token = "";
 let userAgent = "Travis CiBot";
+const YAML = require("json2yaml")
+
+const supportedTechs = require("./travisData/yamlLanguages.json")
+const utils = require('./utils')
 
 let urlRoot = "https://api.travis-ci.org";
-let supportedTechs = ["Node.js", "Ruby"];
 
 /**
  * This function:
@@ -87,30 +90,28 @@ function activate(owner, reponame, callback){
 /**
  * This function returns yaml file body for specified technology
  * @param {String} technology 
+ * @param {String} postUrl URL to post build notifications to
  */
-function createYaml(technology){
+function createYaml(technology, postUrl){
     let resp = constant.getMessageStructure();
 
-    if(!supportedTechs.includes(technology)){
+    if(!supportedTechs.hasOwnProperty(technology.toLowerCase())){
         resp.status = constant.FAILURE;
         resp.message = `Sorry I can't create yaml for ${technology}`;
         resp.data = null;
         return resp;
     }
-
-    let yaml = "";
-    switch(technology){
-        case 'Node.js':
-            yaml = "bGFuZ3VhZ2U6IG5vZGVfanMKbm9kZV9qczoKLSAic3RhYmxlIgphZnRlcl9zdWNjZXNzOgotIG5wbSBydW4gY292ZXJhbGxz";
-            break;
-        case 'Ruby':
-            yaml = "bGFuZ3VhZ2U6IHJ1YnkNCnJ2bToNCiAtIDIuMg0KIC0ganJ1YnkNCiAtIHJieC0z";
+    let techJson = supportedTechs[technology.toLocaleLowerCase()];
+    if (postUrl !== undefined){
+        techJson.notifications.webhooks.push(postUrl);
     }
-    
+
+    let yaml = YAML.stringify( techJson );
+    console.log(yaml)
     resp.status = constant.SUCCESS;
     resp.message = `The content of yaml file for ${technology}`;
-    resp.data.body = yaml;
-    console.log(resp);
+    resp.data.body = utils.encodeBase64(yaml);
+
     return resp;
 }
 
@@ -118,11 +119,14 @@ function createYaml(technology){
  * This function returns list of supported technologies in JSON format
  */
 function listTechnologies(){
-    
+    let available = [];
+    for (k in supportedTechs) {
+        available.push(k.charAt(0).toUpperCase() + k.slice(1));
+    }
     let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = "The list of supported technologies";
-    response.data.body = supportedTechs;
+    response.data.body = available;
 
     return response;
 }
