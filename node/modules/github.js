@@ -376,34 +376,40 @@ function createIssueJSON(repo, owner, title, optional) {
 				"bug", "CiBot"
 			]
 		}
-		if (users.length === 0){
+		users.forEach(function(user){
+			if (user.valid){
+				issue.assignees.push(user.user);
+			}
+		})
+		return issue;
+	}).then(function(issue){
+		if (issue.assignees.length === 0){
 			if (breaker !== null) {
 				if (typeof(breaker) === "string"){
 					// Sanity check to make sure that the breaker is valid
-					checkUserInCollaborators(repo, owner, breaker).then(function(result){
+					return validUserFunction(breaker).then(function(result){
+						console.log(result)
 						if (result.valid) {
 							issue.fallbackAssignee = true;
 							issue.assignees.push(breaker);
+							console.log(issue.fallbackAssignee)
 						}
+						return issue;
 					});
 				} else {
 					// We have been passed a list of assignees, likely from modifying the issue
 					var breakers = Promise.all(breaker.map(validUserFunction));
-					breakers.then(function(result){
-						if (result.valid){
-							issue.assignees.push(result.user);
-						}
+					return breakers.then(function(result){
+						result.forEach(function(user){
+							if (user.valid){
+								issue.assignees.push(user.user);
+							}
+						})
+						return issue;
 					});
 				}
 			}
-		} else {
-			users.forEach(function(user){
-				if (user.valid){
-					issue.assignees.push(user.user);
-				}
-			})
 		}
-		return issue;
 	});
 };
 
@@ -508,13 +514,19 @@ function createGitHubIssue(repo, owner, issuePromise) {
 					var assignees = ''
 					if (iAssignees) {
 						assignees = 'We could not assign the issue to the people you requested, so we fell \
-									back to the person who delivered the offending commit. '
+back to the person who delivered the offending commit. '
 					}
-					assignees += 'The issue has been assigned to: '
-					issue.assignees.forEach(function(user){
-						assignees += `${user}, `;
-					})
-					assignees = assignees.substring(0, assignees.length - 2) + '.'
+					if (issue.assignees.length !== 0){
+						assignees += 'The issue has been assigned to: '
+						issue.assignees.forEach(function(user){
+							assignees += `${user}, `;
+						})
+						assignees = assignees.substring(0, assignees.length - 2) + '.'
+					}
+					else
+					{
+						assignees += 'We could not assign the issue to anyone.'
+					}
 					var message = constants.getMessageStructure();
 					message['status'] = constants.SUCCESS;
 					message['message'] = `Issue created with id ${body.id}. ${assignees}`;
@@ -556,8 +568,8 @@ function createGitHubIssue(repo, owner, issuePromise) {
 // console.log(i2);
 // i2.then(console.log);
 // createGitHubIssue('test', 'arewm', i2).then(console.log);
-// var i3 = createIssueJSON('test', 'arewm', 'test-3', {'body': 'test!!', 'assignees': ['arewm', 'bubba']});
-// createGitHubIssue('test', 'arewm', i3).then(console.log);
+// var i3 = createIssueJSON('test', 'arewm', 'test-3', {'body': 'test!!', 'assignees': ['george', 'bubba'], 'breaker': ['arewm']});
+// createGitHubIssue('test', 'arewm', i3).then(console.log,console.log);
 
 /////////////////////////////////
 //                             //
