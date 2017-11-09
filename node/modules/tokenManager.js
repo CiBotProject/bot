@@ -1,4 +1,4 @@
-const store = require("data-store")("github_token_storage", {cwd: "data"});
+const store = require("data-store")("data-store", {cwd: "github_token_storage"});
 var manager = {};
 
 module.exports = manager;
