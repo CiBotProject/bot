@@ -41,8 +41,16 @@ function activate(owner, reponame, callback){
                     callback(resp);
                     return;
                 }
-                
-                body = JSON.parse(body);    
+                try{
+                    body = JSON.parse(body);        
+                }
+                catch(e){
+                    resp.status = constant.ERROR;
+                    resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:. Travis-ci.org returns: ${body}`;
+                    resp.data.body = e;
+                    callback(resp);
+                    return;
+                }
                 
                 
                 options.url = `${urlRoot}/hooks`;
