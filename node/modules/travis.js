@@ -19,51 +19,65 @@ let supportedTechs = ["Node.js", "Ruby"];
  * @param {String} reponame //github repo name
  */
 function activate(owner, reponame, callback){
-    
-    authenticate(owner, function(){
-        let options = {
-            url: `${urlRoot}/repos/${owner}/${reponame}`,
-            method: 'GET',
-            headers:
-            {
-                'User-Agent': userAgent,
-                'Content-Type': 'application/json',
-                'Authorization': token
-            }
-        }
-        var resp = constant.getMessageStructure();
-    
-        request(options, function(err, res, body){
-            if(err) {
-                resp.status = constant.ERROR;
-                resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
-                resp.data.body = err;
-                callback(resp);
-                return;
-            }
-            console.log(body);
-            body = JSON.parse(body);
-            
-            options.url = `${urlRoot}/hooks`;
-            options.method = "PUT";
-            options.json = {
-                hook:{
-                    id:body.id,
-                    active:true
+    var resp = constant.getMessageStructure();
+    try{
+        authenticate(owner, function(){
+            let options = {
+                url: `${urlRoot}/repos/${owner}/${reponame}`,
+                method: 'GET',
+                headers:
+                {
+                    'User-Agent': userAgent,
+                    'Content-Type': 'application/json',
+                    'Authorization': token
                 }
             }
             
-            console.log(options);
-
             request(options, function(err, res, body){
+                if(err) {
+                    resp.status = constant.ERROR;
+                    resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
+                    resp.data.body = err;
+                    callback(resp);
+                    return;
+                }
+                try{
+                    body = JSON.parse(body);        
+                }
+                catch(e){
+                    resp.status = constant.ERROR;
+                    resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:. Travis-ci.org returns: ${body}`;
+                    resp.data.body = e;
+                    callback(resp);
+                    return;
+                }
+                
+                
+                options.url = `${urlRoot}/hooks`;
+                options.method = "PUT";
+                options.json = {
+                    hook:{
+                        id:body.id,
+                        active:true
+                    }
+                }
     
-                resp.status = constant.SUCCESS;
-                resp.message = `Travis activated for ${owner}/${reponame}`;
-                resp.data.body = body;
-                callback(resp);
+                request(options, function(err, res, body){
+        
+                    resp.status = constant.SUCCESS;
+                    resp.message = `Travis activated for ${owner}/${reponame}`;
+                    resp.data.body = body;
+                    callback(resp);
+                });
             });
-        });
-    });    
+        });  
+    } catch(e){
+        resp.status = constant.ERROR;
+        resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
+        resp.data.body = e;
+        callback(resp);
+    }
+      
     
 
     
@@ -217,6 +231,7 @@ function authenticate(user, callback){
 
     request(options, function(err, res, body){
         if(err) throw err;
+        console.log("TRAVIS TOKEN:", body.access_token);
         token += body.access_token;
         callback();
     })
