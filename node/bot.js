@@ -48,7 +48,9 @@ app.listen(3000, () => console.log('Example app listening on port 3000!'));
 //web server endpoints
 //Travis
 app.post("/travis",function(req,res){
-  console.log(req);
+  var payload = req.body.payload;
+  console.log(parseJSON(payload).commit);
+  console.log(parseJSON(payload).repository.name);
   // var channel = globals.channelMap[req.body.data.repository];
   //
   // if(!globals.ownerMap[channel] && !globals.repoMap[channel]){
