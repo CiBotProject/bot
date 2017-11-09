@@ -4,9 +4,8 @@ const nock = require("nock");
 const request = require("request");
 const tokenManager = require("./tokenManager");
 
-let token = "token ";
+let token = "";
 let userAgent = "Travis CiBot";
-let githubToken = "";
 
 let urlRoot = "https://api.travis-ci.org";
 let supportedTechs = ["Node.js", "Ruby"];
@@ -33,6 +32,8 @@ function activate(owner, reponame, callback){
                 }
             }
             
+            console.log(options);
+
             request(options, function(err, res, body){
                 if(err) {
                     resp.status = constant.ERROR;
@@ -235,7 +236,7 @@ function authenticate(user, callback){
     request(options, function(err, res, body){
         if(err) throw err;
         console.log("TRAVIS TOKEN:", body.access_token);
-        token += body.access_token;
+        token = "token " + body.access_token;
         callback();
     })
 }
