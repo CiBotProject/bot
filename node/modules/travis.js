@@ -99,7 +99,7 @@ function createYaml(technology, postUrl){
     }
     let techJson = supportedTechs[technology.toLocaleLowerCase()];
     if (postUrl !== undefined){
-        techJson.notifications.webhooks.push(postUrl);
+        techJson.notifications.webhooks.urls.push(postUrl);
     }
 
     let yaml = YAML.stringify( techJson );
