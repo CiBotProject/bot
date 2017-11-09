@@ -1,4 +1,3 @@
-const clone = require('clone');
 const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
@@ -7,7 +6,6 @@ const request = require("request");
 let token = "token ";
 let githubToken = process.env.GITHUB_TOKEN;
 let urlRoot = "https://api.travis-ci.org";
-let message = clone(constant.message);
 let supportedTechs = ["Node.js", "Ruby"];
 
 // lastBuild("test", "test", function(data){
@@ -47,7 +45,7 @@ function activate(owner, reponame, callback){
             'Authorization': token
         }
     }
-    var resp = clone(constant.message);
+    var resp = constant.getMessageStructure();
 
     request(options, function(err, res, body){
         let hookNock = nock(urlRoot).put("/hooks")
@@ -72,7 +70,7 @@ function activate(owner, reponame, callback){
  * @param {String} technology 
  */
 function createYaml(technology){
-    let resp = clone(constant.message);
+    let resp = constant.getMessageStructure();
 
     if(supportedTechs.indexOf(technology) < 0){
         resp.status = constant.FAILURE;
@@ -93,7 +91,7 @@ function createYaml(technology){
  */
 function listTechnologies(){
     
-    let response = clone(constant.message);
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = "The list of supported technologies";
     response.data.body = supportedTechs;
@@ -108,7 +106,7 @@ function listTechnologies(){
  */
 function lastBuild(owner, reponame, callback){
 
-    let resp = clone(constant.message);
+    let resp = constant.getMessageStructure();
 
     let buildsNock = nock("https://api.travis-ci.org")
         .get(`/repos/${owner}/${reponame}/builds`)
@@ -163,7 +161,7 @@ function listAccounts(){
 
     });
 
-    let response = clone(constant.message);
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = accounts;
@@ -180,7 +178,7 @@ function listBuilds(owner, reponame){
     travis.repos(owner, reponame).builds.get(function(err, res){
 
     });
-    let response = clone(constant.message);
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = builds;
