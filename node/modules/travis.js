@@ -179,11 +179,41 @@ function badge(owner, repo){
     return `[![Build Status](https://img.shields.io/travis/${owner}/${repo}.svg)](https://travis-ci.org/${owner}/${repo})`
 }
 
+/**
+ * The function authenticate user using github token
+ * @param {*} user 
+ * @param {*} callback 
+ */
+function authenticate(user, callback){
+    githubToken = tokenManager.getToken(user);
+    let options = {
+        url: `${urlRoot}/auth/github`,
+        method: 'POST',
+        headers:
+        {
+            'User-Agent': userAgent,
+            'Content-Type': 'application/json',
+            'Authorization': token
+        },
+        json:{
+            github_token:githubToken
+        }
+    }
+
+    request(options, function(err, res, body){
+        if(err) throw err;
+        console.log("TRAVIS TOKEN:", body.access_token);
+        token = "token " + body.access_token;
+        callback(body.access_token);
+    })
+}
+
 module.exports.activate = activate;//activates travis for repo. Params: owner, reponame, callback
 module.exports.lastBuild = lastBuild;//returns last build state. Params: owner, reponame, callback
 module.exports.createYaml = createYaml;//create the yaml for specified technology. Params: technology
 module.exports.listTechnologies = listTechnologies;//list supported technologies. No params.
 module.exports.badge = badge;
+module.exports.travisToken = authenticate;
 function listAccounts(){
     let accounts = nock("https://api.travis-ci.org")
         .get("/accounts")
@@ -215,32 +245,4 @@ function listBuilds(owner, reponame){
     response.body = builds;
 
     return response;
-}
-/**
- * The function authenticate user using github token
- * @param {*} user 
- * @param {*} callback 
- */
-function authenticate(user, callback){
-    githubToken = tokenManager.getToken(user);
-    let options = {
-        url: `${urlRoot}/auth/github`,
-        method: 'POST',
-        headers:
-        {
-            'User-Agent': userAgent,
-            'Content-Type': 'application/json',
-            'Authorization': token
-        },
-        json:{
-            github_token:githubToken
-        }
-    }
-
-    request(options, function(err, res, body){
-        if(err) throw err;
-        console.log("TRAVIS TOKEN:", body.access_token);
-        token = "token " + body.access_token;
-        callback();
-    })
 }
