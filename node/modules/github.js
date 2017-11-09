@@ -493,6 +493,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 			// Send a http request to url and specify a callback that will be called upon its return.
 			request(options, function (error, response, body) 
 			{
+				console.log(options);
 				if(response.statusCode == '201')
 				{
 					var assignees = ''

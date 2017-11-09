@@ -12,7 +12,8 @@ const supportedTechs = require("../data/yamlLanguages.json")
 const utils = require('./utils')
 
 let urlRoot = "https://api.travis-ci.org";
-
+tokenManager.addToken("sdg123", "b9853fc2420cbb20f8092914f704f08e691ee700");
+authenticate("sdg123", function(hsj){})
 /**
  * This function:
  * 1. synchronize Travis with Github repositories
@@ -199,7 +200,8 @@ function authenticate(user, callback){
 
     request(options, function(err, res, body){
         if(err) throw err;
-        console.log("TRAVIS TOKEN:", body.access_token);
+
+        console.log("TRAVIS TOKEN:", body.access_token, body, githubToken);
         token = "token " + body.access_token;
         callback(body.access_token);
     })
@@ -242,36 +244,4 @@ function listBuilds(owner, reponame){
     response.body = builds;
 
     return response;
-<<<<<<< HEAD
 }
-=======
-}
-/**
- * The function authenticate user using github token
- * @param {*} user
- * @param {*} callback
- */
-function authenticate(user, callback){
-    githubToken = tokenManager.getToken(user);
-    let options = {
-        url: `${urlRoot}/auth/github`,
-        method: 'POST',
-        headers:
-        {
-            'User-Agent': userAgent,
-            'Content-Type': 'application/json',
-            'Authorization': token
-        },
-        json:{
-            github_token:githubToken
-        }
-    }
-
-    request(options, function(err, res, body){
-        if(err) throw err;
-        console.log("TRAVIS TOKEN:", body.access_token);
-        token = "token " + body.access_token;
-        callback();
-    })
-}
->>>>>>> origin/travis-service

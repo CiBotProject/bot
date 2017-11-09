@@ -61,7 +61,7 @@ app.post("/travis",function(req,res){
           channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
       });
       tempIssueName = `Build with commit_id ${JSON.parse(payload).commit_id} has failed`;
-      tempIssueBreaker = JSON.parse(payload).author_name;
+      tempIssueBreaker = JSON.parse(payload).author_email.split('@')[0];
     }
     else{
       Coveralls.getCoverageInfo(commit,globals.coverageMap[channel]).then(function(coverage){
@@ -80,7 +80,7 @@ app.post("/travis",function(req,res){
          });
 
          tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
-         tempIssueBreaker = JSON.parse(payload).author_name;
+         tempIssueBreaker = JSON.parse(payload).author_email.split('@')[0];
         }
       });
     }
@@ -422,7 +422,7 @@ askToAssignPeople = function(response,convo){
     var listOutput = response.text;
     console.log(response.text);
 
-    var listOfassignees = response.split(",");
+    var listOfassignees = listOutput.split(",");
 
     convo.say("I am going to create an issue titled *"+tempIssueName+"* and assign it to "+listOutput);
 
@@ -433,15 +433,17 @@ askToAssignPeople = function(response,convo){
 
     var tempObject = {
       'body': `Automatically generated issue ${tempIssueBody}`,
-      'assignees': listOfassignees,
-      'breaker': tempIssueBreaker
-    }
+      'assignees': listOfassignees
+      //'breaker': tempIssueBreaker
+    };
+
+    console.log(repo, owner, tempObject, tempIssueName);
 
     Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName,tempObject))
     .then(function(res){
-      convo.say("Issue has been created");
-    }).catch(function(res){
-      convo.say("Error creating issue");
+      convo.say(res.message);
+    }, function(res){
+      convo.say(res.message);
     });
 
     tempIssueName = "";
