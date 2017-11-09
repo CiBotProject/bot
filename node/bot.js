@@ -32,7 +32,7 @@ tunnel.on('close', function() {
     // tunnels are closed
 });
 
-var tempIssueName = "";
+var tempIssueName = "",tempIssueBody="",tempIssueName="";
 
 var globals = {
   coverageMap:{},//channel:threshold amount
@@ -61,6 +61,7 @@ app.post("/travis",function(req,res){
           channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
       });
       tempIssueName = `Build with commit_id ${JSON.parse(payload).commit_id} has failed`;
+      tempIssueBreaker = JSON.parse(payload).author_name;
     }
     else{
       Coveralls.getCoverageInfo(commit,globals.coverageMap[channel]).then(function(coverage){
@@ -79,6 +80,7 @@ app.post("/travis",function(req,res){
          });
 
          tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
+         tempIssueBreaker = JSON.parse(payload).author_name;
         }
       });
     }
@@ -393,6 +395,17 @@ askToCreateNewIssue = function(response,convo){
 }
 
 askToCreateExistingIssue = function(response,convo){
+
+  if(tempIssueName.includes("Coverage")){
+    tempIssueBody = "Coveralls failure";
+  }
+  else if(tempIssueName.includes("Build")){
+    tempIssueBody = "Build failure";
+  }
+  else{
+    tempIssueBody = "";
+  }
+
   convo.ask('Current issue title is set to *'+tempIssueName+'*. Do you want to change the title of the issue (yes/no)?',function(response,convo){
     if(response.text.toLowerCase()==="yes"){
       askToCreateNewIssue(response,convo);
@@ -416,7 +429,15 @@ askToAssignPeople = function(response,convo){
     repo = globals.repoMap[response.channel];
     owner = globals.ownerMap[response.channel];
 
-    Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName))
+
+
+    var tempObject = {
+      'body': `Automatically generated issue ${tempIssueBody}`,
+      'assignees': listOfassignees,
+      'breaker': tempIssueBreaker
+    }
+
+    Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName,tempObject))
     .then(function(res){
       convo.say("Issue has been created");
     }).catch(function(res){
@@ -424,6 +445,8 @@ askToAssignPeople = function(response,convo){
     });
 
     tempIssueName = "";
+    tempIssueBreaker = "";
+    tempIssueBody = "";
     convo.next();
 
   });
