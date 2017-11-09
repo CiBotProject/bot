@@ -368,6 +368,7 @@ function createIssueJSON(repo, owner, title, optional) {
 		var issue = {
 			"repo": repo,	// needed for us not GitHub
 			"owner": owner,	// needed for us not GitHub
+			"fallbackAssignee": false,	// needed for us not GitHub
 			"title": title,
 			"body": body,
 			"assignees": [],
@@ -378,9 +379,10 @@ function createIssueJSON(repo, owner, title, optional) {
 		if (users.length !== 0){
 			if (breaker !== null) {
 				if (typeof(breaker) === "string"){
+					issue.fallbackAssignee = true;
 					issue.assignees.push(breaker);
 				} else {
-					// We have been passed a list of assignees
+					// We have been passed a list of assignees, likely from modifying the issue
 					issue.assignees = breaker;
 				}
 			}
@@ -463,8 +465,10 @@ function createGitHubIssue(repo, owner, issuePromise) {
 	return issuePromise.then(function(issue){
 		var iRepo = issue.repo;
 		var iOwner = issue.owner;
+		var iAssignees = issue.fallbackAssignee;
 		delete issue.repo;
 		delete issue.owner;
+		delete issue.fallbackAssignee;
 
 		var options = {
 			url: `${urlRoot}/repos/${owner}/${repo}/issues`,
@@ -491,9 +495,21 @@ function createGitHubIssue(repo, owner, issuePromise) {
 			{
 				if(response.statusCode == '201')
 				{
+					var assignees = ''
+					if (iAssignees) {
+						assignees = 'We could not assign the issue to the people you requested, so we fell \
+									back to the person who delivered the offending commit. '
+					}
+					assignees += 'The issue has been assigned to: '
+					issue.assignees.forEach(function(user){
+						if (user.valid){
+							assignees += `${user}, `;
+						}
+					})
+					assignees = assignees.substring(0, assignees.length - 2) + '.'
 					var message = constants.getMessageStructure();
 					message['status'] = constants.SUCCESS;
-					message['message'] = `Issue created with id ${body.id}`;
+					message['message'] = `Issue created with id ${body.id}. ${assignees}`;
 					resolve(message);
 				}
 				else
