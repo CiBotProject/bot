@@ -32,7 +32,7 @@ tunnel.on('close', function() {
     // tunnels are closed
 });
 
-var tempIssueName = "",tempIssueBody="",tempIssueName="";
+var tempIssueName = "",tempIssueBody="",tempIssueBreaker="";
 
 var globals = {
   coverageMap:{},//channel:threshold amount
@@ -433,17 +433,22 @@ askToAssignPeople = function(response,convo){
 
     var tempObject = {
       'body': `Automatically generated issue ${tempIssueBody}`,
-      'assignees': listOfassignees
-      //'breaker': tempIssueBreaker
+      'assignees': listOfassignees,
+      'breaker': tempIssueBreaker
     };
 
     console.log(repo, owner, tempObject, tempIssueName);
 
     Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName,tempObject))
     .then(function(res){
-      convo.say(res.message);
+      console.log(res.message);
+      bot.reply(response, res.message);
+      //convo.say(res.message);
     }, function(res){
-      convo.say(res.message);
+
+      console.log(res.message);
+      bot.reply(response, res.message);
+      //convo.say(res.message);
     });
 
     tempIssueName = "";
