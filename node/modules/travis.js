@@ -2,26 +2,16 @@ const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
 const request = require("request");
+const tokenManager = require("./tokenManager");
+
+let token = "";
+let userAgent = "Travis CiBot";
 const YAML = require("json2yaml")
 
 const supportedTechs = require("./travisData/yamlLanguages.json")
 const utils = require('./utils')
 
-let token = "token ";
-let githubToken = process.env.GITHUB_TOKEN;
 let urlRoot = "https://api.travis-ci.org";
-
-// lastBuild("test", "test", function(data){
-//     console.log(data);
-// });
-//authenticate();
-// activate("test", "test", function(data){
-//     console.log(data);
-// });
-//console.log(listTech());
-//console.log(config("Ruby"));
-//console.log(config("Huskell"));
-
 
 /**
  * This function:
@@ -31,39 +21,68 @@ let urlRoot = "https://api.travis-ci.org";
  * @param {String} reponame //github repo name
  */
 function activate(owner, reponame, callback){
-
-    //todo: first of all sync it.
-
-    let repoNock = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${reponame}`)
-        .reply(200, data.get_repo);
-
-    let options = {
-        url: `${urlRoot}/repos/${owner}/${reponame}`,
-        method: 'GET',
-        headers:
-        {
-            'User-Agent': 'CiBot',
-            'Content-Type': 'application/json',
-            'Authorization': token
-        }
-    }
     var resp = constant.getMessageStructure();
+    try{
+        authenticate(owner, function(){
+            let options = {
+                url: `${urlRoot}/repos/${owner}/${reponame}`,
+                method: 'GET',
+                headers:
+                {
+                    'User-Agent': userAgent,
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                }
+            }
 
-    request(options, function(err, res, body){
-        let hookNock = nock(urlRoot).put("/hooks")
-            .reply(200, data.put_hook);
+            console.log(options);
 
-        options.url = `${urlRoot}/hooks`;
-        options.method = "PUT";
-        request(options, function(err, res, body){
+            request(options, function(err, res, body){
+                if(err) {
+                    resp.status = constant.ERROR;
+                    resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
+                    resp.data.body = err;
+                    callback(resp);
+                    return;
+                }
+                try{
+                    body = JSON.parse(body);
+                }
+                catch(e){
+                    resp.status = constant.ERROR;
+                    resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:. Travis-ci.org returns: ${body}`;
+                    resp.data.body = e;
+                    callback(resp);
+                    return;
+                }
 
-            resp.status = constant.SUCCESS;
-            resp.message = `Travis activated for ${owner}/${reponame}`;
-            resp.data.body = body;
-            callback(resp);
-        })
-    })
+
+                options.url = `${urlRoot}/hooks`;
+                options.method = "PUT";
+                options.json = {
+                    hook:{
+                        id:body.id,
+                        active:true
+                    }
+                }
+
+                request(options, function(err, res, body){
+
+                    resp.status = constant.SUCCESS;
+                    resp.message = `Travis activated for ${owner}/${reponame}`;
+                    resp.data.body = body;
+                    callback(resp);
+                });
+            });
+        });
+    } catch(e){
+        resp.status = constant.ERROR;
+        resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
+        resp.data.body = e;
+        callback(resp);
+    }
+
+
 
 
 }
@@ -122,16 +141,12 @@ function lastBuild(owner, reponame, callback){
 
     let resp = constant.getMessageStructure();
 
-    let buildsNock = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${reponame}/builds`)
-        .reply(200, JSON.stringify(data.list_builds));
-
     let options = {
         url: `${urlRoot}/repos/${owner}/${reponame}/builds`,
         method: 'GET',
         headers:
         {
-            'User-Agent': 'CiBot',
+            'User-Agent': userAgent,
             'Content-Type': 'application/json',
             'Authorization': token
         }
@@ -161,11 +176,15 @@ function lastBuild(owner, reponame, callback){
     });
 }
 
+function badge(owner, repo){
+    return `[![Build Status](https://img.shields.io/travis/${owner}/${repo}.svg)](https://travis-ci.org/${owner}/${repo})`
+}
+
 module.exports.activate = activate;//activates travis for repo. Params: owner, reponame, callback
 module.exports.lastBuild = lastBuild;//returns last build state. Params: owner, reponame, callback
 module.exports.createYaml = createYaml;//create the yaml for specified technology. Params: technology
 module.exports.listTechnologies = listTechnologies;//list supported technologies. No params.
-
+module.exports.badge = badge;
 function listAccounts(){
     let accounts = nock("https://api.travis-ci.org")
         .get("/accounts")
@@ -183,7 +202,6 @@ function listAccounts(){
     return response;
 }
 
-
 function listBuilds(owner, reponame){
     let builds = nock("https://api.travis-ci.org")
         .get(`/repos/${owner}/${repo}/builds`)
@@ -199,15 +217,31 @@ function listBuilds(owner, reponame){
 
     return response;
 }
+/**
+ * The function authenticate user using github token
+ * @param {*} user
+ * @param {*} callback
+ */
+function authenticate(user, callback){
+    githubToken = tokenManager.getToken(user);
+    let options = {
+        url: `${urlRoot}/auth/github`,
+        method: 'POST',
+        headers:
+        {
+            'User-Agent': userAgent,
+            'Content-Type': 'application/json',
+            'Authorization': token
+        },
+        json:{
+            github_token:githubToken
+        }
+    }
 
-function authenticate(){
-    travis.auth.github.post({
-        github_token: githubToken
-    }, function (err, res) {
-        // res => {
-        //     access_token: XXXXXXX
-        // }
-        console.log(res.access_token);
-
-    });
+    request(options, function(err, res, body){
+        if(err) throw err;
+        console.log("TRAVIS TOKEN:", body.access_token);
+        token = "token " + body.access_token;
+        callback();
+    })
 }

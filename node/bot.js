@@ -4,6 +4,7 @@ var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
 var Github = require('./modules/github');
+var tokenManager = require("./modules/tokenManager");
 var bodyParser = require('body-parser')
 const express = require('express');
 const app = express();
@@ -85,7 +86,23 @@ var bot = controller.spawn({
   token: process.env.SLACK_TOKEN,
 }).startRTM()
 
+//add token
+controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], function(bot, message){
+  let messageArray = message.text.split(' ');
+  if(messageArray.length < 2){
+    bot.reply(message, `The command syntax is *add-token user=token*`);
+    return;
+  }
+  messageArray = messageArray[1].split('=');
 
+  if(messageArray.length < 2){
+    bot.reply(message, `The command syntax is *add-token user=token*`);
+    return;
+  }
+
+  tokenManager.addToken(messageArray[0], messageArray[1]);
+  bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored:tada::tada::tada:.`)
+});
 //init repository
 controller.hears(['init travis'],['direct_message','direct_mention','mention'],function(bot,message){
 
@@ -105,16 +122,19 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
 
       globals.repoMap[message.channel]=repoContent[1];
       globals.ownerMap[message.channel]=repoContent[0];
-      globals.channelMap[repoContent[1]]=message.channel;
-      console.log(globals.channelMap);
+      //console.log(tokenManager.getToken())
+      if(tokenManager.getToken(repoContent[0]) === null){
+        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add token using \"*add-token user=token*\" command`);
+        return;
+      }
+
       //create default coverageMap entry
       globals.coverageMap[message.channel]=globals.defaultThreshold;
 
       Travis.activate(repoContent[0],repoContent[1],function(data){
         bot.reply(message,data.message);
+        bot.startConversation(message,askYamlCreation);
       });
-
-      bot.startConversation(message,askYamlCreation);
 
     }
     else{
