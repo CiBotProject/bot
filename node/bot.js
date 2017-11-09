@@ -88,6 +88,7 @@ var bot = controller.spawn({
 
 //add token
 controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], function(bot, message){
+  console.log(message.text);
   let messageArray = message.text.split(' ');
   if(messageArray.length < 2){
     bot.reply(message, `The command syntax is *add-token user=token*`);
