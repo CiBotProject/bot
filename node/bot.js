@@ -16,9 +16,9 @@ var controller = Botkit.slackbot({
   //or a "logLevel" integer from 0 to 7 to adjust logging verbosity
 });
 
-var tunnel = localtunnel(3000,['cibot-csc510'], function(err, tunnel) {
+var tunnel = localtunnel(3000, function(err, tunnel) {
     if (err){
-      console.log(error);
+      console.log(err);
     }// the assigned public url for your tunnel
     // i.e. https://abcdefgjhij.localtunnel.me
     console.log(tunnel.url);
