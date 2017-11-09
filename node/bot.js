@@ -47,32 +47,32 @@ app.listen(3000, () => console.log('Example app listening on port 3000!'));
 //web server endpoints
 //Travis
 app.post("/travis",function(req,res){
-
-  var channel = globals.channelMap[req.body.data.repository];
-
-  if(!globals.ownerMap[channel] && !globals.repoMap[channel]){
-    bot.reply(message,"Please run init travis <owner>/<repository> before running coveralls");
-  }
-  else{
-    Coveralls.getCoverageInfo(req.body.data.sha,globals.coverageMap[channel]).then(function(coverage){
-
-      if(coverage.status==='success')
-        bot.say({
-            text: coverage.message,
-            channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
-        });
-
-      if(coverage.status==='failure'){
-       var coverageBelowThreshold = globals.coverageMap[channel] - coverage.data.body.covered_percent;
-       bot.say({
-           text: `Coverage ${coverageBelowThreshold} percent below threshold. To create an issue please type "@${bot.identity.name} create issue"`,
-           channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
-       });
-
-       tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
-      }
-    });
-  }
+  console.log(req);
+  // var channel = globals.channelMap[req.body.data.repository];
+  //
+  // if(!globals.ownerMap[channel] && !globals.repoMap[channel]){
+  //   bot.reply(message,"Please run init travis <owner>/<repository> before running coveralls");
+  // }
+  // else{
+  //   Coveralls.getCoverageInfo(req.body.data.sha,globals.coverageMap[channel]).then(function(coverage){
+  //
+  //     if(coverage.status==='success')
+  //       bot.say({
+  //           text: coverage.message,
+  //           channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
+  //       });
+  //
+  //     if(coverage.status==='failure'){
+  //      var coverageBelowThreshold = globals.coverageMap[channel] - coverage.data.body.covered_percent;
+  //      bot.say({
+  //          text: `Coverage ${coverageBelowThreshold} percent below threshold. To create an issue please type "@${bot.identity.name} create issue"`,
+  //          channel: globals.channelMap[req.body.data.repository] // channel Id for #slack_integration
+  //      });
+  //
+  //      tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
+  //     }
+  //   });
+  // }
 
   res.send("ack");
 });
@@ -141,7 +141,7 @@ askYamlCreation = function(response,convo){
 
 askLanguageToUse = function(response,convo){
   convo.ask('Which language do you want to use? '+Travis.listTechnologies().data.body.join(', '),function(response,convo){
-    var yamlStatus = Travis.createYaml(response.text, myUrl);
+    var yamlStatus = Travis.createYaml(response.text, myUrl,globals.ownerMap[response.channel],globals.repoMap[response.channel]);
     if(yamlStatus.status==='success'){
         //yamlStatus.data.body needs to be passed
         convo.say("I am pushing the yaml file to the github repository ");
