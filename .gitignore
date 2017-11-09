@@ -1,5 +1,6 @@
 # TOKEN PART
-tokens.json
+node/data/tokens.json
+
 # NODE PART
 .vscode
 # Logs
