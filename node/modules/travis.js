@@ -8,7 +8,7 @@ let token = "";
 let userAgent = "Travis CiBot";
 const YAML = require("json2yaml")
 
-const supportedTechs = require("./travisData/yamlLanguages.json")
+const supportedTechs = require("../data/yamlLanguages.json")
 const utils = require('./utils')
 
 let urlRoot = "https://api.travis-ci.org";
@@ -81,10 +81,6 @@ function activate(owner, reponame, callback){
         resp.data.body = e;
         callback(resp);
     }
-      
-    
-
-    
 }
 
 /**

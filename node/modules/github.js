@@ -8,7 +8,7 @@ var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.g
 const mockData = require("./mocks/githubMock.json");
 
 const utils = require('./utils')
-const constants = require('../modules/constants.js');
+const constants = require('./constants.js');
 
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
