@@ -138,7 +138,7 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
       globals.channelMap[repoContent[1]]=message.channel;
       //console.log(tokenManager.getToken())
       if(tokenManager.getToken(repoContent[0]) === null){
-        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add token using \"*add-token user=token*\" command`);
+        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add tokens using the \"*add-token user=token*\" command in a direct message to me. DO NOT send a token where others can see it!`);
         return;
       }
 
