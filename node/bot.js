@@ -19,13 +19,15 @@ var controller = Botkit.slackbot({
   //or a "logLevel" integer from 0 to 7 to adjust logging verbosity
 });
 
-var tunnel = localtunnel(3000, function(err, tunnel) {
+var tunnel = localtunnel(3000, function(err, tun) {
     if (err){
-      console.log(err);
+      console.log("TUNNEL ERROR\n\n", err);
     }// the assigned public url for your tunnel
     // i.e. https://abcdefgjhij.localtunnel.me
-    console.log(tunnel.url);
-    myUrl = tunnel.url;
+    else {
+      console.log(tun.url);
+      myUrl = tun.url;
+    }
 });
 
 tunnel.on('close', function() {
