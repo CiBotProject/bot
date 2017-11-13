@@ -224,15 +224,7 @@ function resetRepoContents(owner, repo, content, file)
  * If the badge already exists in the file, it will not be duplicated.
  * 
  * PRECONDITION: The badge link passed is properly formatted and valid.
- * 
- * Travis CI format:
- * 
- *     [![Build Status](https://travis-ci.org/<owner>/<repo>.svg?branch=<branch>)](https://travis-ci.org/<owner>/<repo>)
- * 
- * Coveralls format:
- * 
- *     [![Coverage Status](https://coveralls.io/repos/github/<owner>/<repo>/badge.svg?branch=<branch>)](https://coveralls.io/github/<owner>/<repo>?branch=<branch>)
- * 
+ *  
  * @param {*} owner the name of the owner
  * @param {*} repo the name of the repository
  * @param {*} branch the name of the branch
@@ -572,30 +564,6 @@ back to the person who delivered the offending commit. '
 // var i3 = createIssueJSON('test', 'arewm', 'test-3', {'body': 'test!!', 'assignees': ['george', 'bubba'], 'breaker': ['arewm']});
 // createGitHubIssue('test', 'arewm', i3).then(console.log,console.log);
 
-/////////////////////////////////
-//                             //
-//    MISCELLANEOUS METHODS    //
-//                             //
-/////////////////////////////////
-
-/**
- * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
- * 
- * Create a Markdown-formatted Travis CI badge.
- */
-function createTravisMarkdownBadge(owner, repo, branch) {
-	return `[![Build Status](https://travis-ci.org/${owner}/${repo}.svg?branch=${branch})](https://travis-ci.org/${owner}/${repo})`;
-}
-
-/**
- * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
- * 
- * Create a Markdown-formatted Coveralls badge.
- */
-function createCoverallsMarkdownBadge(owner, repo, branch) {
-	return `[![Coverage Status](https://coveralls.io/repos/github/${owner}/${repo}/badge.svg?branch=${branch})](https://coveralls.io/github/${owner}/${repo}?branch=${branch})`;
-}
-
 // Export methods for external use.
 exports.getRepoContents = getRepoContents;
 exports.createRepoContents = createRepoContents;
@@ -603,3 +571,4 @@ exports.resetRepoContents = resetRepoContents;
 exports.createIssueJSON = createIssueJSON;
 exports.modifyIssueJSON = modifyIssueJSON;
 exports.createGitHubIssue = createGitHubIssue;
+exports.insertReadmeBadge = insertReadmeBadge;
