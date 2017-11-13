@@ -21,7 +21,7 @@ var controller = Botkit.slackbot({
 
 var tunnel = localtunnel(3000, function(err, tun) {
     if (err){
-      console.log("TUNNEL ERROR\n\n", err);
+      console.log("\n\n***** TUNNEL ERROR *****\n\n", err);
     }// the assigned public url for your tunnel
     // i.e. https://abcdefgjhij.localtunnel.me
     else {
@@ -99,7 +99,7 @@ var bot = controller.spawn({
 }).startRTM()
 
 //add token
-controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], function(bot, message){
+controller.hears(['add-token'], ['direct_message'], function(bot, message){
   console.log(message.text);
   let messageArray = message.text.split(' ');
   if(messageArray.length < 2){

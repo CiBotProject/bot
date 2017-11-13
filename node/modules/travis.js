@@ -12,8 +12,7 @@ const supportedTechs = require("../data/yamlLanguages.json")
 const utils = require('./utils')
 
 let urlRoot = "https://api.travis-ci.org";
-tokenManager.addToken("sdg123", "b9853fc2420cbb20f8092914f704f08e691ee700");
-authenticate("sdg123", function(hsj){})
+
 /**
  * This function:
  * 1. synchronize Travis with Github repositories
