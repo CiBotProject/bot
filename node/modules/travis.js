@@ -1,27 +1,19 @@
-const clone = require('clone');
 const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
 const request = require("request");
+const tokenManager = require("./tokenManager");
 
-let token = "token ";
-let githubToken = process.env.GITHUB_TOKEN;
+let token = "";
+let userAgent = "Travis CiBot";
+const YAML = require("json2yaml")
+
+const supportedTechs = require("../data/yamlLanguages.json")
+const utils = require('./utils')
+
 let urlRoot = "https://api.travis-ci.org";
-let message = clone(constant.message);
-let supportedTechs = ["Node.js", "Ruby"];
-
-// lastBuild("test", "test", function(data){
-//     console.log(data);
-// });
-//authenticate();
-// activate("test", "test", function(data){
-//     console.log(data);
-// });
-//console.log(listTech());
-//console.log(config("Ruby"));
-//console.log(config("Huskell"));
-
-
+tokenManager.addToken("sdg123", "b9853fc2420cbb20f8092914f704f08e691ee700");
+authenticate("sdg123", function(hsj){})
 /**
  * This function:
  * 1. synchronize Travis with Github repositories
@@ -30,60 +22,93 @@ let supportedTechs = ["Node.js", "Ruby"];
  * @param {String} reponame //github repo name
  */
 function activate(owner, reponame, callback){
+    var resp = constant.getMessageStructure();
+    try{
+        authenticate(owner, function(){
+            let options = {
+                url: `${urlRoot}/repos/${owner}/${reponame}`,
+                method: 'GET',
+                headers:
+                {
+                    'User-Agent': userAgent,
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                }
+            }
 
-    //todo: first of all sync it.
+            console.log(options);
 
-    let repoNock = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${reponame}`)
-        .reply(200, data.get_repo);
-    
-    let options = {
-        url: `${urlRoot}/repos/${owner}/${reponame}`,
-        method: 'GET',
-        headers:
-        {
-            'User-Agent': 'CiBot',
-            'Content-Type': 'application/json',
-            'Authorization': token
-        }
+            request(options, function(err, res, body){
+                if(err) {
+                    resp.status = constant.ERROR;
+                    resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
+                    resp.data.body = err;
+                    callback(resp);
+                    return;
+                }
+                try{
+                    body = JSON.parse(body);
+                }
+                catch(e){
+                    resp.status = constant.ERROR;
+                    resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:. Travis-ci.org returns: ${body}`;
+                    resp.data.body = e;
+                    callback(resp);
+                    return;
+                }
+
+
+                options.url = `${urlRoot}/hooks`;
+                options.method = "PUT";
+                options.json = {
+                    hook:{
+                        id:body.id,
+                        active:true
+                    }
+                }
+
+                request(options, function(err, res, body){
+
+                    resp.status = constant.SUCCESS;
+                    resp.message = `Travis activated for ${owner}/${reponame}`;
+                    resp.data.body = body;
+                    callback(resp);
+                });
+            });
+        });
+    } catch(e){
+        resp.status = constant.ERROR;
+        resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
+        resp.data.body = e;
+        callback(resp);
     }
-    var resp = clone(constant.message);
-
-    request(options, function(err, res, body){
-        let hookNock = nock(urlRoot).put("/hooks")
-            .reply(200, data.put_hook);
-        
-        options.url = `${urlRoot}/hooks`;
-        options.method = "PUT";
-        request(options, function(err, res, body){
-
-            resp.status = constant.SUCCESS;
-            resp.message = `Travis activated for ${owner}/${reponame}`;
-            resp.data.body = body;
-            callback(resp);
-        })
-    })
-
-    
 }
 
 /**
  * This function returns yaml file body for specified technology
- * @param {String} technology 
+ * @param {String} technology
+ * @param {String} postUrl URL to post build notifications to
  */
-function createYaml(technology){
-    let resp = clone(constant.message);
+function createYaml(technology, postUrl,owner,repo){
+    let resp = constant.getMessageStructure();
 
-    if(supportedTechs.indexOf(technology) < 0){
+    if(!supportedTechs.hasOwnProperty(technology.toLowerCase())){
         resp.status = constant.FAILURE;
         resp.message = `Sorry I can't create yaml for ${technology}`;
         resp.data = null;
         return resp;
     }
-    
+    let techJson = supportedTechs[technology.toLocaleLowerCase()];
+
+    if (postUrl !== undefined){
+        techJson.notifications.webhooks.urls.push(`${postUrl}/travis`);
+    }
+
+    let yaml = YAML.stringify( techJson );
+    console.log(yaml)
     resp.status = constant.SUCCESS;
     resp.message = `The content of yaml file for ${technology}`;
-    resp.data.body = "bGFuZ3VhZ2U6IG5vZGVfanMKbm9kZV9qczoKLSAic3RhYmxlIgphZnRlcl9zdWNjZXNzOgotIG5wbSBydW4gY292ZXJhbGxz";
+    resp.data.body = utils.encodeBase64(yaml);
 
     return resp;
 }
@@ -92,39 +117,38 @@ function createYaml(technology){
  * This function returns list of supported technologies in JSON format
  */
 function listTechnologies(){
-    
-    let response = clone(constant.message);
+    let available = [];
+    for (k in supportedTechs) {
+        available.push(k.charAt(0).toUpperCase() + k.slice(1));
+    }
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = "The list of supported technologies";
-    response.data.body = supportedTechs;
+    response.data.body = available;
 
     return response;
 }
 
 /**
  * This function returns the last build status for specified repo
- * @param {String} owner 
- * @param {String} repo 
+ * @param {String} owner
+ * @param {String} repo
  */
 function lastBuild(owner, reponame, callback){
 
-    let resp = clone(constant.message);
-
-    let buildsNock = nock("https://api.travis-ci.org")
-        .get(`/repos/${owner}/${reponame}/builds`)
-        .reply(200, JSON.stringify(data.list_builds));
+    let resp = constant.getMessageStructure();
 
     let options = {
         url: `${urlRoot}/repos/${owner}/${reponame}/builds`,
         method: 'GET',
         headers:
         {
-            'User-Agent': 'CiBot',
+            'User-Agent': userAgent,
             'Content-Type': 'application/json',
             'Authorization': token
         }
     }
-    
+
     request(options, function(err, res, body){
         //console.log(body);
         let json = JSON.parse(body);
@@ -138,7 +162,7 @@ function lastBuild(owner, reponame, callback){
                 resp.status = constant.FAILURE;
                 resp.message = `The last build for ${owner}/${reponame} failed`;
                 resp.data.body = path;
-                resp.data.blame.push(path.author_email); 
+                resp.data.blame.push(path.author_email);
                 callback(resp);
             });
         } else if(lastBuildState === 'success'){
@@ -149,11 +173,46 @@ function lastBuild(owner, reponame, callback){
     });
 }
 
+function badge(owner, repo){
+    return `[![Build Status](https://img.shields.io/travis/${owner}/${repo}.svg)](https://travis-ci.org/${owner}/${repo})`
+}
+
+/**
+ * The function authenticate user using github token
+ * @param {*} user 
+ * @param {*} callback 
+ */
+function authenticate(user, callback){
+    githubToken = tokenManager.getToken(user);
+    let options = {
+        url: `${urlRoot}/auth/github`,
+        method: 'POST',
+        headers:
+        {
+            'User-Agent': userAgent,
+            'Content-Type': 'application/json',
+            'Authorization': token
+        },
+        json:{
+            github_token:githubToken
+        }
+    }
+
+    request(options, function(err, res, body){
+        if(err) throw err;
+
+        console.log("TRAVIS TOKEN:", body.access_token, body, githubToken);
+        token = "token " + body.access_token;
+        callback(body.access_token);
+    })
+}
+
 module.exports.activate = activate;//activates travis for repo. Params: owner, reponame, callback
 module.exports.lastBuild = lastBuild;//returns last build state. Params: owner, reponame, callback
 module.exports.createYaml = createYaml;//create the yaml for specified technology. Params: technology
 module.exports.listTechnologies = listTechnologies;//list supported technologies. No params.
-
+module.exports.badge = badge;
+module.exports.travisToken = authenticate;
 function listAccounts(){
     let accounts = nock("https://api.travis-ci.org")
         .get("/accounts")
@@ -163,14 +222,13 @@ function listAccounts(){
 
     });
 
-    let response = clone(constant.message);
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = accounts;
 
     return response;
 }
-
 
 function listBuilds(owner, reponame){
     let builds = nock("https://api.travis-ci.org")
@@ -180,22 +238,10 @@ function listBuilds(owner, reponame){
     travis.repos(owner, reponame).builds.get(function(err, res){
 
     });
-    let response = clone(constant.message);
+    let response = constant.getMessageStructure();
     response.status = constant.SUCCESS;
     response.message = `Here is the build list for ${owner}/${reponame}`;
     response.body = builds;
 
     return response;
-}
-
-function authenticate(){
-    travis.auth.github.post({
-        github_token: githubToken
-    }, function (err, res) {
-        // res => { 
-        //     access_token: XXXXXXX 
-        // } 
-        console.log(res.access_token);
-        
-    });
 }

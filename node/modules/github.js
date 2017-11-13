@@ -1,12 +1,17 @@
 var nock = require('nock');
 var Promise = require('bluebird');
 var request = require('request');
+var _ = require('underscore');
 
-var token = 'token ' + process.env.GITHUB_TOKEN;
+// var token = 'token ' + process.env.GITHUB_TOKEN;
+
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
+
 const mockData = require("./mocks/githubMock.json");
 
-var constants = require('../modules/constants.js');
+var tokenManager = require('./tokenManager.js');
+const utils = require('./utils')
+const constants = require('./constants.js');
 
 // Signature to append to all generated issues
 var issueBodySignature = '\n\nCreated by CiBot!';
@@ -19,10 +24,10 @@ var issueBodySignature = '\n\nCreated by CiBot!';
  */
 function getRepoContents(owner, repo)
 {
-	var myMockData = mockData.getRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	// var myMockData = mockData.getRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
 	
     var options =
     {
@@ -32,7 +37,7 @@ function getRepoContents(owner, repo)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         }
     };
 
@@ -47,6 +52,37 @@ function getRepoContents(owner, repo)
 }
 
 /**
+ * Get the contents of a specified file in a specified repo for a specified user.
+ * 
+ * @param {string} owner the name of the owner of the repository
+ * @param {string} repo the name of the repository holding the file
+ * @param {string} file the name of the file to be read
+ */
+function getFileContents(owner, repo, file) {
+
+	var options =
+	{
+		url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
+		method: 'Get',
+		headers:
+		{
+			'User-Agent': 'CiBot',
+			'Content-Type': 'application/json',
+			'Authorization': 'token ' + tokenManager.getToken(owner)
+		}
+	};
+
+	return new Promise(function(resolve, reject)
+	{
+		request(options, function(error, response, body)
+		{
+			var contents = JSON.parse(body);
+			resolve(contents);
+		});
+	});
+}
+
+/**
  * Get the SHA of a specified file in the root directory of a specified repository for a specified user.
  * 
  * @param {string} owner the name of the owner of the repository
@@ -54,12 +90,7 @@ function getRepoContents(owner, repo)
  * @param {string} file the name of the file whose SHA will be returned
  */
 function getFileSha(owner, repo, file)
-{
-	var myMockData = mockData.createRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-	
+{	
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
@@ -68,7 +99,7 @@ function getFileSha(owner, repo, file)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         }
     };
 
@@ -95,11 +126,6 @@ function getFileSha(owner, repo, file)
  */
 function createRepoContents(owner, repo, content, file)
 {
-	var myMockData = mockData.createRepoContents.success
-	var mockMe = nock(urlRoot)
-	.put(`/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
@@ -108,7 +134,7 @@ function createRepoContents(owner, repo, content, file)
         {
             'User-Agent': 'CiBot',
             'Content-Type': 'application/json',
-            'Authorization': token
+            'Authorization': 'token ' + tokenManager.getToken(owner)
         },
         json:
         {
@@ -124,14 +150,14 @@ function createRepoContents(owner, repo, content, file)
         {
 			if(response.statusCode == '201')
 			{
-				var message = constants.message;
+				var message = constants.getMessageStructure();
 				message['status'] = constants.SUCCESS;
 				message['message'] = `The ${file} file was successfully created in ${owner}/${repo}`;
 				resolve(message);
 			}
 			else
 			{
-				var message = constants.message;
+				var message = constants.getMessageStructure();
 				message['status'] = constants.FAILURE;
 				message['message'] = `There was a problem creating the ${file} file in ${owner}/${repo}`;
 				reject(message);
@@ -162,11 +188,6 @@ function createRepoContents(owner, repo, content, file)
  */
 function resetRepoContents(owner, repo, content, file)
 {
-	var myMockData = mockData.resetRepoContents.success
-	var mockMe = nock(urlRoot)
-	.get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-
     getFileSha(owner, repo, file).then(function(data)
     {
         var options =
@@ -177,12 +198,12 @@ function resetRepoContents(owner, repo, content, file)
             {
                 'User-Agent': 'CiBot',
                 'Content-Type': 'application/json',
-                'Authorization': token
+                'Authorization': 'token ' + tokenManager.getToken(owner)
             },
             json:
             {
                 'message': `[CiBot] Reset ${file}`,
-                'content': `${encodeBase64(content)}`,
+                'content': `${utils.encodeBase64(content)}`,
                 'sha': `${data}`
             }
         };
@@ -195,6 +216,80 @@ function resetRepoContents(owner, repo, content, file)
             });
         });
     });
+}
+
+/**
+ * Add a badge to the top of a README.md file.
+ * If no README.md file exists, one will be created.
+ * If the badge already exists in the file, it will not be duplicated.
+ * 
+ * PRECONDITION: The badge link passed is properly formatted and valid.
+ * 
+ * Travis CI format:
+ * 
+ *     [![Build Status](https://travis-ci.org/<owner>/<repo>.svg?branch=<branch>)](https://travis-ci.org/<owner>/<repo>)
+ * 
+ * Coveralls format:
+ * 
+ *     [![Coverage Status](https://coveralls.io/repos/github/<owner>/<repo>/badge.svg?branch=<branch>)](https://coveralls.io/github/<owner>/<repo>?branch=<branch>)
+ * 
+ * @param {*} owner the name of the owner
+ * @param {*} repo the name of the repository
+ * @param {*} branch the name of the branch
+ * @param {*} markdownBadge a string representing the badge link in Markdown format
+ */
+function insertReadmeBadge(owner, repo, branch, markdownBadge) {
+
+	return getRepoContents(owner, repo).then(function(rootContents)
+	{
+		var rootFileNames = _.pluck(rootContents, 'name');
+
+		if (_.contains(rootFileNames, 'README.md')) {
+
+			return getFileContents(owner, repo, 'README.md').then(function(fileContents)
+			{
+				var encodedContents = fileContents.content.replace(/\n/g, '');
+				var decodedContents = utils.decodeBase64(encodedContents);
+
+				if (!decodedContents.includes(markdownBadge)) {
+
+					decodedContents = markdownBadge + "\n" + decodedContents;
+					resetRepoContents(owner, repo, decodedContents, 'README.md');
+
+					return new Promise(function(resolve, reject)
+					{
+						var message = constants.getMessageStructure();
+						message['status'] = constants.SUCCESS;
+						message['message'] = `The badge was successfully added to the ${owner}/${repo} README.md file.`;
+						resolve(message);
+					});
+
+				} else {
+
+					return new Promise(function(resolve, reject)
+					{
+						var message = constants.getMessageStructure();
+						message['status'] = constants.FAILURE;
+						message['message'] = `The badge already exists in the ${owner}/${repo} README.md file.`;
+						reject(message);
+					});
+				}
+			});
+
+		} else {
+
+			var encodedBadge = utils.encodeBase64(markdownBadge);
+			createRepoContents(owner, repo, encodedBadge, 'README.md');
+
+			return new Promise(function(resolve, reject)
+			{
+				var message = constants.getMessageStructure();
+				message['status'] = constants.SUCCESS;
+				message['message'] = `A README.md file was created for ${owner}/${repo} with the given badge.`;
+				resolve(message);
+			});
+		}
+	});
 }
 
 /**
@@ -217,19 +312,14 @@ function opt(options, name, defaultValue) {
  * @param {*} owner owner of the repository
  * @param {*} user user to test for membership in collaborators
  */
-function checkUserInCollaborators(repo, owner, user) {
-	var myMockData = mockData.checkUserInCollaborators.success
-	var mockMe = nock(urlRoot)
-	.get(`/repos/${owner}/${repo}/collaborators/${user}`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-	
+function checkUserInCollaborators(repo, owner, user) {	
 	var options = {
 		url: `${urlRoot}/repos/${owner}/${repo}/collaborators/${user}`,
 		method: 'GET',
 		headers: {
 			"user-agent": "CiBot",
 			"content-type": "application/json",
-			"Authorization": token
+			"Authorization": 'token ' + tokenManager.getToken(owner)
 		}
 	};
 
@@ -256,6 +346,7 @@ function checkUserInCollaborators(repo, owner, user) {
  * @param {?json} optional json object containing the optional fields (body, assignees)
  * @param {?string} optional.body The body of the issue to be created
  * @param {?string[]} optional.assignees A list of individuals to assign the issue to
+ * @param {?string[]} optional.breaker The id of the breaker causing the issue. Will be assigned if the assignees fail
  * @returns {json} object specifying the issue to be created
  */
 function createIssueJSON(repo, owner, title, optional) {
@@ -263,7 +354,8 @@ function createIssueJSON(repo, owner, title, optional) {
 		optional = {};
 	}
 	var body = opt(optional, 'body', '') + issueBodySignature;
-	var assignees = opt(optional, 'assignees', [])
+	var assignees = opt(optional, 'assignees', []);
+	var breaker = opt(optional, 'breaker', null);
 
 	// Determine if all of the users are valid collaborators for the project
 	var validUserFunction = function(user){
@@ -276,6 +368,7 @@ function createIssueJSON(repo, owner, title, optional) {
 		var issue = {
 			"repo": repo,	// needed for us not GitHub
 			"owner": owner,	// needed for us not GitHub
+			"fallbackAssignee": false,	// needed for us not GitHub
 			"title": title,
 			"body": body,
 			"assignees": [],
@@ -289,6 +382,34 @@ function createIssueJSON(repo, owner, title, optional) {
 			}
 		})
 		return issue;
+	}).then(function(issue){
+		if (issue.assignees.length === 0){
+			if (breaker !== null) {
+				if (typeof(breaker) === "string"){
+					// Sanity check to make sure that the breaker is valid
+					return validUserFunction(breaker).then(function(result){
+						console.log(result)
+						if (result.valid) {
+							issue.fallbackAssignee = true;
+							issue.assignees.push(breaker);
+							console.log(issue.fallbackAssignee)
+						}
+						return issue;
+					});
+				} else {
+					// We have been passed a list of assignees, likely from modifying the issue
+					var breakers = Promise.all(breaker.map(validUserFunction));
+					return breakers.then(function(result){
+						result.forEach(function(user){
+							if (user.valid){
+								issue.assignees.push(user.user);
+							}
+						})
+						return issue;
+					});
+				}
+			}
+		}
 	});
 };
 
@@ -303,6 +424,7 @@ function createIssueJSON(repo, owner, title, optional) {
  * @param {?string} optional.title new issue title
  * @param {?string} optional.body new body content
  * @param {?string[]} optional.assignees new assignees
+ * @param {?string[]} optional.breaker The id of the breaker causing the issue. Will be assigned if the assignees fail
  * @returns {Promise<json>} object specifying the issue to be created
  */
 function modifyIssueJSON(issue, optional) {
@@ -336,10 +458,11 @@ function modifyIssueJSON(issue, optional) {
 			resolvedIssue.body = resolvedIssue.body.replace(re, '');
 			resolvedIssue.repo = optional.repo == undefined ? resolvedIssue.repo : optional.repo;
 			resolvedIssue.owner = optional.owner == undefined ? resolvedIssue.owner : optional.owner;
+			resolvedIssue.breaker = optional.breaker == undefined ? resolvedIssue.assignees : optional.breaker;
 			return createIssueJSON(resolvedIssue.repo, 
 				resolvedIssue.owner, 
 				resolvedIssue.title, 
-				{'body': resolvedIssue.body, 'assignees':resolvedIssue.assignees});
+				{'body': resolvedIssue.body, 'assignees':resolvedIssue.assignees, 'breaker':resolvedIssue.breaker});
 		}
 		return resolvedIssue;
 	});
@@ -353,18 +476,15 @@ function modifyIssueJSON(issue, optional) {
  * @param {Promise<json>} issue json of the issue to create
  */
 function createGitHubIssue(repo, owner, issuePromise) {
-	var myMockData = mockData.createGitHubIssue.success
-	var mockMe = nock(urlRoot)
-	.post(`/repos/${owner}/${repo}/issues`)
-	.reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-
 	// Delete the repo and owner from the issue json before sending to GitHub
 	// but keep track of it to make sure that we have a json file that can be submitted here
 	return issuePromise.then(function(issue){
 		var iRepo = issue.repo;
 		var iOwner = issue.owner;
+		var iAssignees = issue.fallbackAssignee;
 		delete issue.repo;
 		delete issue.owner;
+		delete issue.fallbackAssignee;
 
 		var options = {
 			url: `${urlRoot}/repos/${owner}/${repo}/issues`,
@@ -372,7 +492,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 			headers: {
 				"user-agent": "CiBot",
 				"content-type": "application/json",
-				"Authorization": token
+				"Authorization": 'token ' + tokenManager.getToken(owner)
 			},
 			json: issue
 		};
@@ -381,7 +501,7 @@ function createGitHubIssue(repo, owner, issuePromise) {
 		{
 			// If we are trying to submit to a repo that the issue was not created for, error out.
 			if (iRepo !== repo || iOwner !== owner){
-				var message = constants.message;
+				var message = constants.getMessageStructure();
 				message['status'] = constants.FAILURE;
 				message['message'] = 'The issue was created for a different repository than it was submitted to.';
 				reject(message);
@@ -389,16 +509,33 @@ function createGitHubIssue(repo, owner, issuePromise) {
 			// Send a http request to url and specify a callback that will be called upon its return.
 			request(options, function (error, response, body) 
 			{
+				console.log(options);
 				if(response.statusCode == '201')
 				{
-					var message = constants.message;
+					var assignees = ''
+					if (iAssignees) {
+						assignees = 'We could not assign the issue to the people you requested, so we fell \
+back to the person who delivered the offending commit. '
+					}
+					if (issue.assignees.length !== 0){
+						assignees += 'The issue has been assigned to: '
+						issue.assignees.forEach(function(user){
+							assignees += `${user}, `;
+						})
+						assignees = assignees.substring(0, assignees.length - 2) + '.'
+					}
+					else
+					{
+						assignees += 'We could not assign the issue to anyone.'
+					}
+					var message = constants.getMessageStructure();
 					message['status'] = constants.SUCCESS;
-					message['message'] = `Issue created with id ${body.id}`;
+					message['message'] = `Issue created with id ${body.id}. ${assignees}`;
 					resolve(message);
 				}
 				else
 				{
-					var message = constants.message;
+					var message = constants.getMessageStructure();
 					message['status'] = constants.FAILURE;
 					message['message'] = 'An error was encountered when trying to create the issue';
 					reject(message);
@@ -432,8 +569,8 @@ function createGitHubIssue(repo, owner, issuePromise) {
 // console.log(i2);
 // i2.then(console.log);
 // createGitHubIssue('test', 'arewm', i2).then(console.log);
-// var i3 = createIssueJSON('test', 'arewm', 'test-3', {'body': 'test!!', 'assignees': ['arewm', 'bubba']});
-// createGitHubIssue('test', 'arewm', i3).then(console.log);
+// var i3 = createIssueJSON('test', 'arewm', 'test-3', {'body': 'test!!', 'assignees': ['george', 'bubba'], 'breaker': ['arewm']});
+// createGitHubIssue('test', 'arewm', i3).then(console.log,console.log);
 
 /////////////////////////////////
 //                             //
@@ -442,23 +579,21 @@ function createGitHubIssue(repo, owner, issuePromise) {
 /////////////////////////////////
 
 /**
- * Encode the given parameter using base64 scheme.
+ * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
  * 
- * @param {*} decoded_content content to encode.
+ * Create a Markdown-formatted Travis CI badge.
  */
-function encodeBase64(decoded_content)
-{
-    return Buffer.from(decoded_content).toString('base64');
+function createTravisMarkdownBadge(owner, repo, branch) {
+	return `[![Build Status](https://travis-ci.org/${owner}/${repo}.svg?branch=${branch})](https://travis-ci.org/${owner}/${repo})`;
 }
 
 /**
- * Decode the given parameter using base64 scheme.
+ * NOTE: THIS METHOD MAY NOT BE USED IF WE ARE PASSING A FULL LINK FROM ANOTHER MODULE
  * 
- * @param {*} encoded_content content to decode.
+ * Create a Markdown-formatted Coveralls badge.
  */
-function decodeBase64(encoded_content)
-{
-    return Buffer.from(encoded_content, 'base64').toString();
+function createCoverallsMarkdownBadge(owner, repo, branch) {
+	return `[![Coverage Status](https://coveralls.io/repos/github/${owner}/${repo}/badge.svg?branch=${branch})](https://coveralls.io/github/${owner}/${repo}?branch=${branch})`;
 }
 
 // Export methods for external use.

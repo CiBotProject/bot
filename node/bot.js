@@ -1,31 +1,122 @@
 
+var localtunnel  = require('localtunnel');
 var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
 var Github = require('./modules/github');
+var tokenManager = require("./modules/tokenManager");
+var bodyParser = require('body-parser')
+const express = require('express');
+const app = express();
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(bodyParser.json());
+
+var myUrl = null;
+
 var controller = Botkit.slackbot({
   debug: false
   //include "log: false" to disable logging
   //or a "logLevel" integer from 0 to 7 to adjust logging verbosity
 });
 
-var tempIssueName = "";
+var tunnel = localtunnel(3000, function(err, tunnel) {
+    if (err){
+      console.log(err);
+    }// the assigned public url for your tunnel
+    // i.e. https://abcdefgjhij.localtunnel.me
+    console.log(tunnel.url);
+    myUrl = tunnel.url;
+});
+
+tunnel.on('close', function() {
+    // tunnels are closed
+});
+
+var tempIssueName = "",tempIssueBody="",tempIssueBreaker="";
 
 var globals = {
   coverageMap:{},//channel:threshold amount
   repoMap:{},//channel:repo name
   ownerMap:{},//channel:owner name
   yamlMap:{},//channel:true/false [check if yaml exisits or not]
+  channelMap:{},//repo: channel name
   defaultThreshold:95,
 };
+//start the local webserver
+app.listen(3000, () => console.log('Example app listening on port 3000!'));
+
+//web server endpoints
+//Travis
+app.post("/travis",function(req,res){
+  var payload = req.body.payload;
+  var commit = JSON.parse(payload).commit;
+  var repositoryName = JSON.parse(payload).repository.name;
+  var channel = globals.channelMap[repositoryName];
+  var status = JSON.parse(payload).state;
+  console.log(commit,repositoryName,channel,status);
+
+    if(status==="failed"){
+      bot.say({
+          text: `Build has failed. To create an issue please type "@${bot.identity.name} create issue"`,
+          channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
+      });
+      tempIssueName = `Build with commit_id ${JSON.parse(payload).commit_id} has failed`;
+      tempIssueBreaker = JSON.parse(payload).author_email.split('@')[0];
+    }
+    else{
+      Coveralls.getCoverageInfo(commit,globals.coverageMap[channel]).then(function(coverage){
+
+        if(coverage.status==='success')
+          bot.say({
+              text: coverage.message,
+              channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
+          });
+
+        if(coverage.status==='failure'){
+         var coverageBelowThreshold = globals.coverageMap[channel] - coverage.data.body.covered_percent;
+         bot.say({
+             text: `Coverage ${coverageBelowThreshold} percent below threshold. To create an issue please type "@${bot.identity.name} create issue"`,
+             channel: globals.channelMap[repositoryName] // channel Id for #slack_integration
+         });
+
+         tempIssueName = `Coverage ${coverageBelowThreshold} percent below threshold`;
+         tempIssueBreaker = JSON.parse(payload).author_email.split('@')[0];
+        }
+      });
+    }
+
+  res.send("ack");
+});
+
+
+
 
 // connect the bot to a stream of messages
-controller.spawn({
+var bot = controller.spawn({
   token: process.env.SLACK_TOKEN,
 }).startRTM()
 
+//add token
+controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], function(bot, message){
+  console.log(message.text);
+  let messageArray = message.text.split(' ');
+  if(messageArray.length < 2){
+    bot.reply(message, `The command syntax is *add-token user=token*`);
+    return;
+  }
+  messageArray = messageArray[1].split('=');
+
+  if(messageArray.length < 2){
+    bot.reply(message, `The command syntax is *add-token user=token*`);
+    return;
+  }
+
+  tokenManager.addToken(messageArray[0], messageArray[1]);
+  bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored:tada::tada::tada:.`)
+});
 //init repository
 controller.hears(['init travis'],['direct_message','direct_mention','mention'],function(bot,message){
+
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('travis');
 
@@ -42,14 +133,20 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
 
       globals.repoMap[message.channel]=repoContent[1];
       globals.ownerMap[message.channel]=repoContent[0];
+      globals.channelMap[repoContent[1]]=message.channel;
+      //console.log(tokenManager.getToken())
+      if(tokenManager.getToken(repoContent[0]) === null){
+        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add token using \"*add-token user=token*\" command`);
+        return;
+      }
+
       //create default coverageMap entry
       globals.coverageMap[message.channel]=globals.defaultThreshold;
 
       Travis.activate(repoContent[0],repoContent[1],function(data){
         bot.reply(message,data.message);
+        bot.startConversation(message,askYamlCreation);
       });
-
-      bot.startConversation(message,askYamlCreation);
 
     }
     else{
@@ -75,8 +172,8 @@ askYamlCreation = function(response,convo){
 }
 
 askLanguageToUse = function(response,convo){
-  convo.ask('Which language do you want to use ? '+Travis.listTechnologies().data.body.join(','),function(response,convo){
-    var yamlStatus = Travis.createYaml(response.text);
+  convo.ask('Which language do you want to use? '+Travis.listTechnologies().data.body.join(', '),function(response,convo){
+    var yamlStatus = Travis.createYaml(response.text, myUrl,globals.ownerMap[response.channel],globals.repoMap[response.channel]);
     if(yamlStatus.status==='success'){
         //yamlStatus.data.body needs to be passed
         convo.say("I am pushing the yaml file to the github repository ");
@@ -146,13 +243,15 @@ controller.hears(['test last build'],['direct_message','direct_mention','mention
 });
 
 //testing issue creation
-controller.hears(['test issue'],['direct_message','direct_mention','mention'],function(bot,message){
+controller.hears(['create issue'],['direct_message','direct_mention','mention'],function(bot,message){
   if(!globals.ownerMap[message.channel] && !globals.repoMap[message.channel]){
     bot.reply(message,"Please run init travis <owner>/<repository> before testing issue creation");
   }
   else{
-    tempIssueName="";
-    issueCreationConversation(bot,message);
+    if(tempIssueName!=="")
+      issueCreationConversation(bot,message,tempIssueName);
+    else
+      issueCreationConversation(bot,message,"");
   }
 });
 
@@ -187,7 +286,6 @@ controller.hears(['test coveralls','test Coveralls'],['direct_message','direct_m
        var coverageBelowThreshold = globals.coverageMap[message.channel] - coverage.data.body.covered_percent;
        issueCreationConversation(bot,message,`Coverage ${coverageBelowThreshold} percent below threshold`);
       }
-
     });
   }
 });
@@ -223,7 +321,7 @@ controller.hears(['help'],['direct_message','direct_mention','mention'],function
   else if(messageArray.indexOf('issue')!==-1){
     if (messageArray.indexOf('change')!==-1){
       bot.reply(message,helpCommands().existing_issue);
-    } 
+    }
     else {
       bot.reply(message,helpCommands().issue);
     }
@@ -262,7 +360,7 @@ function issueCreationConversation(bot,message,issueTitle){
   bot.startConversation(message,askToCreateIssue);
 }
 //helper functions
-askToCreateIssue = function(response,convo){
+/*askToCreateIssue = function(response,convo){
   convo.ask('Do you want to create an issue (yes/no)?',function(response,convo){
     if(response.text.toLowerCase()==="yes"){
       if(tempIssueName===""){
@@ -277,6 +375,14 @@ askToCreateIssue = function(response,convo){
     }
     convo.next();
   });
+}*/
+askToCreateIssue = function(response,convo){
+    if(tempIssueName===""){
+      askToCreateNewIssue(response,convo);
+    }
+    else{
+      askToCreateExistingIssue(response,convo);
+    }
 }
 
 askToCreateNewIssue = function(response,convo){
@@ -289,7 +395,18 @@ askToCreateNewIssue = function(response,convo){
 }
 
 askToCreateExistingIssue = function(response,convo){
-  convo.ask('Current issue title is set to *'+tempIssueName+'*.Do you want to change the title of the issue (yes/no)',function(response,convo){
+
+  if(tempIssueName.includes("Coverage")){
+    tempIssueBody = "Coveralls failure";
+  }
+  else if(tempIssueName.includes("Build")){
+    tempIssueBody = "Build failure";
+  }
+  else{
+    tempIssueBody = "";
+  }
+
+  convo.ask('Current issue title is set to *'+tempIssueName+'*. Do you want to change the title of the issue (yes/no)?',function(response,convo){
     if(response.text.toLowerCase()==="yes"){
       askToCreateNewIssue(response,convo);
     }
@@ -301,21 +418,43 @@ askToCreateExistingIssue = function(response,convo){
 }
 
 askToAssignPeople = function(response,convo){
-  convo.ask('Please enter a comma-separated list of assignees to the issue. Ex @user1,@user2,@user3...',function(response,convo){
+  convo.ask('Please enter a comma-separated list of github usernames to the issue. Ex user1,user2,user3...',function(response,convo){
     var listOutput = response.text;
+    console.log(response.text);
+
+    var listOfassignees = listOutput.split(",");
+
     convo.say("I am going to create an issue titled *"+tempIssueName+"* and assign it to "+listOutput);
 
     repo = globals.repoMap[response.channel];
     owner = globals.ownerMap[response.channel];
 
-    Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName))
+
+
+    var tempObject = {
+      'body': `Automatically generated issue ${tempIssueBody}`,
+      'assignees': listOfassignees,
+      'breaker': tempIssueBreaker
+    };
+
+    console.log(repo, owner, tempObject, tempIssueName);
+
+    Github.createGitHubIssue(repo,owner,Github.createIssueJSON(repo,owner,tempIssueName,tempObject))
     .then(function(res){
-      convo.say("Issue has been created");
-    }).catch(function(res){
-      convo.say("Error creating issue");
+      console.log(res.message);
+      bot.reply(response, res.message);
+      //convo.say(res.message);
+    }, function(res){
+
+      console.log(res.message);
+      bot.reply(response, res.message);
+      //convo.say(res.message);
     });
 
     tempIssueName = "";
+    tempIssueBreaker = "";
+    tempIssueBody = "";
     convo.next();
+
   });
 }
