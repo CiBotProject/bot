@@ -402,6 +402,7 @@ function createIssueJSON(repo, owner, title, optional) {
 				}
 			}
 		}
+		return issue;
 	});
 };
 
