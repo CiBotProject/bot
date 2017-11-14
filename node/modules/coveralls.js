@@ -54,6 +54,10 @@ function getCoverageInfo(commitSHA, coverageThreshold)
 	});
 }
 
+function badge(owner, repo){
+    return `[![Coverage Status](https://img.shields.io/coveralls/github/${owner}/${repo}.svg)](https://coveralls.io/github/${owner}/${repo})`
+}
+
 exports.getCoverageInfo = getCoverageInfo;
 
 /*

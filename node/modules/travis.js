@@ -1,3 +1,4 @@
+var clone = require('clone')
 const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
@@ -12,8 +13,7 @@ const supportedTechs = require("../data/yamlLanguages.json")
 const utils = require('./utils')
 
 let urlRoot = "https://api.travis-ci.org";
-tokenManager.addToken("sdg123", "b9853fc2420cbb20f8092914f704f08e691ee700");
-authenticate("sdg123", function(hsj){})
+
 /**
  * This function:
  * 1. synchronize Travis with Github repositories
@@ -98,7 +98,7 @@ function createYaml(technology, postUrl,owner,repo){
         resp.data = null;
         return resp;
     }
-    let techJson = supportedTechs[technology.toLocaleLowerCase()];
+    let techJson = clone(supportedTechs[technology.toLocaleLowerCase()]);
 
     if (postUrl !== undefined){
         techJson.notifications.webhooks.urls.push(`${postUrl}/travis`);

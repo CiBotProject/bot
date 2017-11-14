@@ -19,13 +19,15 @@ var controller = Botkit.slackbot({
   //or a "logLevel" integer from 0 to 7 to adjust logging verbosity
 });
 
-var tunnel = localtunnel(3000, function(err, tunnel) {
+var tunnel = localtunnel(3000, function(err, tun) {
     if (err){
-      console.log(err);
+      console.log("\n\n***** TUNNEL ERROR *****\n\n", err);
     }// the assigned public url for your tunnel
     // i.e. https://abcdefgjhij.localtunnel.me
-    console.log(tunnel.url);
-    myUrl = tunnel.url;
+    else {
+      console.log(tun.url);
+      myUrl = tun.url;
+    }
 });
 
 tunnel.on('close', function() {
@@ -97,7 +99,7 @@ var bot = controller.spawn({
 }).startRTM()
 
 //add token
-controller.hears(['add-token'], ['direct_message', 'direct_metion', 'mention'], function(bot, message){
+controller.hears(['add-token'], ['direct_message'], function(bot, message){
   console.log(message.text);
   let messageArray = message.text.split(' ');
   if(messageArray.length < 2){
@@ -136,7 +138,7 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
       globals.channelMap[repoContent[1]]=message.channel;
       //console.log(tokenManager.getToken())
       if(tokenManager.getToken(repoContent[0]) === null){
-        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add token using \"*add-token user=token*\" command`);
+        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add tokens using the \"*add-token user=token*\" command in a direct message to me. DO NOT send a token where others can see it!`);
         return;
       }
 
