@@ -1,3 +1,4 @@
+var clone = require('clone')
 const constant = require("./constants.js");
 const data = require("./mocks/travisMock.json");
 const nock = require("nock");
@@ -97,7 +98,7 @@ function createYaml(technology, postUrl,owner,repo){
         resp.data = null;
         return resp;
     }
-    let techJson = supportedTechs[technology.toLocaleLowerCase()];
+    let techJson = clone(supportedTechs[technology.toLocaleLowerCase()]);
 
     if (postUrl !== undefined){
         techJson.notifications.webhooks.urls.push(`${postUrl}/travis`);
