@@ -202,9 +202,10 @@ function resetRepoContents(owner, repo, content, file)
             },
             json:
             {
+				'path': file,
                 'message': `[CiBot] Reset ${file}`,
-                'content': `${utils.encodeBase64(content)}`,
-                'sha': `${data}`
+                'content': utils.encodeBase64(content),
+                'sha': data
             }
         };
 
@@ -216,6 +217,38 @@ function resetRepoContents(owner, repo, content, file)
             });
         });
     });
+}
+
+function deleteFile(owner, repo, file)
+{
+	getFileSha(owner, repo, file).then(function(data)
+	{
+		var options =
+		{
+			url: `${urlRoot}/repos/${owner}/${repo}/contents/${file}`,
+			method: 'DELETE',
+			headers:
+			{
+				'User-Agent': 'CiBot',
+				'Content-Type': 'application/json',
+				'Authorization': 'token ' + tokenManager.getToken(owner)
+			},
+			json:
+			{
+				'path': file,
+				'message': `[CiBot] Delete ${file}`,
+				'sha': data
+			}
+		}
+
+		return new Promise(function(resolve, reject)
+		{
+			request(options, function(error, response, body)
+			{
+				resolve(body);
+			});
+		});
+	});
 }
 
 function enableIssues(owner, repo)
@@ -241,16 +274,9 @@ function enableIssues(owner, repo)
 	{
 		request(options, function(error, response, body)
 		{
-			console.log(body.name, body.has_issues);
+			resolve(body);
 		});
 	});
-}
-
-enableIssues('Timothy-Dement','LEARN-NODE-1');
-
-function deleteFile()
-{
-
 }
 
 /**
