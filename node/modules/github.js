@@ -218,6 +218,41 @@ function resetRepoContents(owner, repo, content, file)
     });
 }
 
+function enableIssues(owner, repo)
+{
+	var options =
+	{
+		url: `${urlRoot}/repos/${owner}/${repo}`,
+		method: 'PATCH',
+		headers:
+		{
+			'User-Agent': 'CiBot',
+			'Content-Type': 'application/json',
+			'Authorization': 'token ' + tokenManager.getToken(owner)
+		},
+		json:
+		{
+			'name': repo,
+			'has_issues': true
+		}
+	};
+
+	return new Promise(function (resolve, reject)
+	{
+		request(options, function(error, response, body)
+		{
+			console.log(body.name, body.has_issues);
+		});
+	});
+}
+
+enableIssues('Timothy-Dement','LEARN-NODE-1');
+
+function deleteFile()
+{
+
+}
+
 /**
  * Add a badge to the top of a README.md file.
  * If no README.md file exists, one will be created.
