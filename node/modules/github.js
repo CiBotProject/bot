@@ -537,6 +537,40 @@ back to the person who delivered the offending commit. '
 		});
 	})
 };
+/**
+ * Get the commit author information using commit hash value
+ * @param {String} owner the owner of the repository
+ * @param {String} repo the repository name for which commit hash is related
+ * @param {String} hash the hash of the commit
+ */
+function getCommitterLoginWithHash(owner, repo, hash)
+{
+	// var myMockData = mockData.getRepoContents.success
+	// var mockMe = nock(urlRoot)
+	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
+	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
+	
+    var options =
+    {
+        url: `${urlRoot}/repos/${owner}/${repo}/commits/${hash}`,
+        method: 'GET',
+        headers:
+        {
+            'User-Agent': 'CiBot',
+            'Content-Type': 'application/json'
+        }
+    };
+
+    return new Promise(function(resolve, reject)
+    {
+        request(options, function(error, response, body)
+        {
+			var contents = JSON.parse(body).committer;
+			console.log(contents);
+			resolve(contents);
+        });
+    });
+}
 
 // createGitHubIssue('coveralls-test','timothy-dement',createIssueJSON('coveralls-test','timothy-dement','BUG'))
 // .then(function(response)
@@ -573,3 +607,4 @@ exports.createIssueJSON = createIssueJSON;
 exports.modifyIssueJSON = modifyIssueJSON;
 exports.createGitHubIssue = createGitHubIssue;
 exports.insertReadmeBadge = insertReadmeBadge;
+exports.getCommitterLoginWithHash = getCommitterLoginWithHash;
