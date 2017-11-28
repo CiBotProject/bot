@@ -12,22 +12,23 @@ const app = express();
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
 
-var myUrl = null;
-
 var controller = Botkit.slackbot({
   debug: false
   //include "log: false" to disable logging
   //or a "logLevel" integer from 0 to 7 to adjust logging verbosity
 });
 
-var tunnel = localtunnel(3000, function(err, tun) {
+var myUrl = 'https://andrewigibektimsamuelsourabh.localtunnel.me';
+
+var tunnel = localtunnel(3000, { subdomain: 'andrewigibektimsamuelsourabh' },function(err, tun) {
     if (err){
       console.log("\n\n***** TUNNEL ERROR *****\n\n", err);
     }// the assigned public url for your tunnel
     // i.e. https://abcdefgjhij.localtunnel.me
     else {
       console.log(tun.url);
-      myUrl = tun.url;
+      if(tun.url != myUrl)
+        console.log("Url has been changed.. delete yaml file in repo and reinitialize");
     }
 });
 
