@@ -5,7 +5,7 @@ var Coveralls = require('./modules/coveralls');
 var Travis = require('./modules/travis');
 var Github = require('./modules/github');
 var tokenManager = require("./modules/tokenManager");
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 const slack_data = require('data-store')("slack-data",{cwd:"slack-data"});
 const express = require('express');
 const app = express();
@@ -53,6 +53,11 @@ app.listen(3000, () => console.log('Example app listening on port 3000'));
 app.get('/test', (req,res) => {res.send('Hello')});
 app.get('/test-repo',(req,res) => {res.send(slack_data.get("SlackBot").channel)});
 //web server endpoints
+//slack
+app.post("/slack/button-input", function(req,res){
+  console.log(req);
+  res.send("ack");
+});
 //Travis
 app.post("/travis",function(req,res){
   var payload = req.body.payload;
@@ -162,6 +167,8 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
 
       Travis.activate(repoContent[0],repoContent[1],function(data){
         bot.reply(message,data.message);
+        if(data.status==='error')
+          return;
         bot.startConversation(message,askYamlCreation);
       });
 
