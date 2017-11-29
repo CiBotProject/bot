@@ -1,0 +1,71 @@
+- hosts: nodes
+
+  vars:
+    - gitUrl: "https://github.com/CiBotProject/deploy"
+    - homeDir: /home/cibot
+    - appDir: app
+    - scriptDest: "/tmp/setup_4.x"
+
+  tasks:
+    # We need to install at least 4.x nodejs in order for forever to run properly
+    # This can be done using the script hosted at https://deb.nodesource.com/setup_4.x
+    # But python needs to be updated first for the get_url command to run
+    - name: "update python2 repo"
+      become: yes
+      apt_repository:
+        repo: ppa:jonathonf/python-2.7
+
+    - name: "update python2"
+      apt: name=python2.7 update_cache=yes state=latest
+      become: yes
+
+    - name: "get script to update node repo"
+      get_url:
+        url: "https://deb.nodesource.com/setup_4.x"
+        dest: "{{scriptDest}}"
+
+    - name: "make the file executable"
+      become: yes
+      file:
+        path: "{{ scriptDest }}"
+        mode: 777
+
+    - name: "execute script"
+      command: "{{ scriptDest }}"
+      become: yes
+
+    # Now that all of that is out of the way, we can just install the packages we want
+    ## Install node.js
+    - name: "Install all packages"
+      apt: name={{ item }} update_cache=yes state=latest
+      become: yes
+      with_items:
+        - git
+        - nodejs
+
+    # The version of npm might be outdate, so use it to update itself
+    - name: "Ensure npm is latest version"
+      become: yes
+      npm:
+        name: npm
+        global: yes
+        state: latest
+
+    ## Install forever
+    - name: "Install forever"
+      become: yes
+      npm:
+        name: forever
+        global: yes
+        production: yes
+        state: latest
+
+    ## Pull/clone git repo into a destination: https://github.com/CSC-DevOps/App
+    - name: "Pull/clone git repo into a destination: https://github.com/CiBotProject/deploy"
+      git: repo={{ gitUrl }} dest={{ homeDir }}/{{ appDir }} update=yes force=yes
+      
+
+    ## Install npm packages
+    - name: "Install npm packages"
+      become: yes
+      shell: npm install /home/cibot/app
