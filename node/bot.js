@@ -13,18 +13,22 @@ app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
 
 var controller = Botkit.slackbot({
-  debug: false
+  debug: false,
+  json_file_store: 'persistent-storage.json'
 });
 
-var myUrl = 'http://13.85.65.255:3000';
-/*
-var tunnel = localtunnel(3000, { subdomain: 'andrewigibektimsamuelsourabh' },function(err, tun) {
+var defaultThreshold = 95;
+
+var myUrl = '';
+
+var tunnel = localtunnel(3000, { },function(err, tun) {
     if (err){
       console.log("\n\n***** TUNNEL ERROR *****\n\n", err);
     }// the assigned public url for your tunnel
     // i.e. https://abcdefgjhij.localtunnel.me
     else {
       console.log(tun.url);
+      myUrl = tun.url;
       if(tun.url != myUrl)
         console.log("Url has been changed.. delete yaml file in repo and reinitialize");
     }
@@ -33,7 +37,7 @@ var tunnel = localtunnel(3000, { subdomain: 'andrewigibektimsamuelsourabh' },fun
 tunnel.on('close', function() {
     // tunnels are closed
 });
-*/
+
 var tempIssueName = "",tempIssueBody="",tempIssueBreaker="";
 
 slack_data.set("defaultThreshold",95);
@@ -50,6 +54,8 @@ app.post("/travis",function(req,res){
   var payload = req.body.payload;
   var commit = JSON.parse(payload).commit;
   var repositoryName = JSON.parse(payload).repository.name;
+  console.log(JSON.parse(payload));
+  console.log(JSON.parse(payload).repository);
   var channel = slack_data.get(repositoryName).channel;
   var status = JSON.parse(payload).state;
 
@@ -112,6 +118,26 @@ controller.hears(['add-token'], ['direct_message'], function(bot, message){
   tokenManager.addToken(messageArray[0], messageArray[1]);
   bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored:tada::tada::tada:.`)
 });
+// reset repository
+controller.hears(['reset travis'],['direct_message','direct_mention','mention'],function(bot,message){
+  controller.storage.channels.get(message.channel, function(err, channel_data) {
+    console.log(err)
+    console.log(channel_data)
+    if (channel_data) {
+      controller.storage.channels.delete(message.channel, function(err) {
+        console.log(err)
+        if(err){
+          bot.reply(message, `There was an error resetting this channel: ${err}`);
+          return;
+        }
+      });
+      bot.reply(message, `The channel has been reset. It was initialized to ${channel_data.owner}/${channel_data.repo}`)
+    }
+    else {
+      bot.reply(message, 'There was an error resetting this channel. Are you sure it was initialized?')
+    }
+  })
+});
 //init repository
 controller.hears(['init travis'],['direct_message','direct_mention','mention'],function(bot,message){
 
@@ -119,48 +145,61 @@ controller.hears(['init travis'],['direct_message','direct_mention','mention'],f
   var index = messageArray.indexOf('travis');
 
   if(messageArray.indexOf('help')===-1 && messageArray.indexOf('travis')!==-1 && messageArray.indexOf('init')!==-1){
-    //repo name has to be word after init
-    var repoString = null;
 
-    if((index+1)<messageArray.length)
-        repoString = messageArray[index+1];
-    //if repo name is provided
-    if(repoString!==null){
-      //format is owner/repo-name
-      var repoContent = repoString.split('/');
-
-      if(slack_data.get(message.channel)){
-        bot.reply(message,"This channel has already been initialized");
+    controller.storage.channels.get(message.channel, function(err, channel_info) {
+      console.log(err)
+      console.log(channel_info)
+      if (channel_info) {
+        bot.reply(message, 'This channel has already been initialized.');
+        bot.reply(message, 'Reset this channel using the command `reset travis` to initialize another repository.')
         return;
       }
-      //map channel to repo
-      slack_data.set(`${message.channel}.repo`,repoContent[1]);
-      //map repo to channel
-      slack_data.set(`${repoContent[1]}.channel`,message.channel);
-      //map channel to owner
-      slack_data.set(`${message.channel}.owner`,repoContent[0]);
-      //create default coverageMap entry
-      slack_data.set(`${message.channel}.coverage`,slack_data.get("defaultThreshold"));
+      else{
+        //repo name has to be word after init
+        var repoString = null;
 
-      //console.log(tokenManager.getToken())
-      if(tokenManager.getToken(repoContent[0]) === null){
-        bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add tokens using the \"*add-token user=token*\" command in a direct message to me. DO NOT send a token where others can see it!`);
-        return;
+        if ((index + 1) < messageArray.length)
+          repoString = messageArray[index + 1];
+        //if repo name is provided
+        if (repoString !== null) {
+          //format is owner/repo-name
+          var repoContent = repoString.split('/');
+
+          controller.storage.channels.save({
+            'id': message.channel,
+            'repo': repoContent[1],
+            'owner': repoContent[0],
+            'coverage': defaultThreshold
+          });
+          // //map channel to repo
+          // slack_data.set(`${message.channel}.repo`,repoContent[1]);
+          // //map repo to channel
+          // slack_data.set(`${repoContent[1]}.channel`,message.channel);
+          // //map channel to owner
+          // slack_data.set(`${message.channel}.owner`,repoContent[0]);
+          // //create default coverageMap entry
+          // slack_data.set(`${message.channel}.coverage`,slack_data.get("defaultThreshold"));
+
+          //console.log(tokenManager.getToken())
+          if (tokenManager.getToken(repoContent[0]) === null) {
+            bot.reply(message, `Sorry, but token for *${repoContent[0]}* is not found:disappointed:. You can add tokens using the \"*add-token user=token*\" command in a direct message to me. DO NOT send a token where others can see it!`);
+            return;
+          }
+
+          Travis.activate(repoContent[0], repoContent[1], function (data) {
+            bot.reply(message, data.message);
+            if (data.status === 'error')
+              return;
+            bot.startConversation(message, askYamlCreation);
+          });
+
+        }
+        else {
+          bot.reply(message, "Please provide the name of the repository to be initialized. Ex init travis <owner>/<repository>");
+        }
       }
-
-
-
-      Travis.activate(repoContent[0],repoContent[1],function(data){
-        bot.reply(message,data.message);
-        if(data.status==='error')
-          return;
-        bot.startConversation(message,askYamlCreation);
-      });
-
-    }
-    else{
-      bot.reply(message,"Please provide the name of the repository to be initialized. Ex init travis <owner>/<repository>");
-    }
+    })
+   
   }
   else{
     bot.reply(message,helpCommands().init);
@@ -171,49 +210,63 @@ askYamlCreation = function(response,convo){
   convo.ask('Would you like to create a yaml file (yes/no)?',function(response,convo){
     if(response.text.toLowerCase()==="yes"){
       askLanguageToUse(response,convo);
-      convo.say("Default coverage threshold for the current repository is set to "+slack_data.get("defaultThreshold")+"%");
+      convo.say(`Default coverage threshold for the current repository is set to ${defaultThreshold}%`);
       convo.next();
     }else if(response.text.toLowerCase()==="no"){
       convo.say("Initialized repository without yaml");
-      convo.say("Default coverage threshold for the current repository is set to "+slack_data.get("defaultThreshold")+"%");
+      convo.say(`Default coverage threshold for the current repository is set to ${defaultThreshold}"%`);
       convo.next();
     }
     else{
       convo.say("I consider this response to be a 'no'. I have initialized repository without yaml");
-      convo.say("Default coverage threshold for the current repository is set to "+slack_data.get("defaultThreshold")+"%");
+      convo.say(`Default coverage threshold for the current repository is set to ${defaultThreshold}%`);
       convo.next();
     }
   });
 }
 
-askLanguageToUse = function(response,convo){
+askLanguageToUse = function(response, convo){
   convo.ask('Which language do you want to use? '+Travis.listTechnologies().data.body.join(', '),function(response,convo){
-    var yamlStatus = Travis.createYaml(response.text, myUrl,slack_data.get(response.channel).owner,slack_data.get(response.channel).repo);
-    if(yamlStatus.status==='success'){
-        //yamlStatus.data.body needs to be passed
-        convo.say("I am pushing the yaml file to the github repository ");
+    controller.storage.channels.get(response.channel, function(err, channel_data){
+      if (channel_data) {
+        let repo = channel_data.repo;
+        let owner = channel_data.owner;
+        var yamlStatus = Travis.createYaml(response.text, myUrl, owner, repo);
+        if(yamlStatus.status==='success'){
+            //yamlStatus.data.body needs to be passed
+            convo.say("I am pushing the yaml file to the github repository ");
+    
+            //push yaml to repository
+            Github.createRepoContents(owner, repo, yamlStatus.data.body,".travis.yml").then(function(res){
+              convo.say("Pushed the yaml file to the github repository ");
+            }).catch(function(res){
 
-        //push yaml to repository
-        Github.createRepoContents(slack_data.get(response.channel).owner,slack_data.get(response.channel).repo,yamlStatus.data.body,".travis.yml").then(function(res){
-          convo.say("Pushed the yaml file to the github repository ");
-        }).catch(function(res){
-
-          var repo = slack_data.get(response.channel).repo;
-
-          convo.say("Error pushing the yaml file to the github repository. Please try and run init travis <owner>/<reponame> ensuring correct details ");
-          slack_data.delete(response.channel);
-          slack_data.delete(repo);
-
-        });
-    }
-    else{
-        var repo = slack_data.get(response.channel).repo;
-        convo.say("Error in creating yaml file");
-        convo.say("See https://docs.travis-ci.com/user/languages/ to set up your repository.");
-        slack_data.delete(response.channel);
-        slack_data.delete(repo);
-    }
-    convo.next();
+              convo.say("Error pushing the yaml file to the github repository. Please try and run init travis <owner>/<reponame> ensuring correct details ");
+              controller.storage.channels.delete(response.channel, function(err){
+                if (err)
+                console.log(`Tried resetting channel ${response.channel}; received error ${err}`)
+              })
+              slack_data.delete(repo);
+    
+            });
+        }
+        else{
+            convo.say("Error in creating yaml file");
+            convo.say("See https://docs.travis-ci.com/user/languages/ to set up your repository.");
+            controller.storage.channels.delete(response.channel, function(err){
+              if (err)
+              console.log(`Tried resetting channel ${response.channel}; received error ${err}`)
+            })
+            slack_data.delete(repo);
+        }
+        convo.next();
+      }
+      else {
+        console.log(`Error getting channel data: ${err}\n${message.channel}`);
+        convo.say('There was an error getting the data from the channel. Please contact the developers.')
+      }
+    })
+    
   });
 }
 
@@ -254,15 +307,17 @@ controller.hears(['configure yaml'],['direct_message','direct_mention','mention'
 
 //testing issue creation
 controller.hears(['create issue'],['direct_message','direct_mention','mention'],function(bot,message){
-  if(!slack_data.get(message.channel)){
-    bot.reply(message,"Please run init travis <owner>/<repository> before testing issue creation");
-  }
-  else{
-    if(tempIssueName!=="")
-      issueCreationConversation(bot,message,tempIssueName);
-    else
-      issueCreationConversation(bot,message,"");
-  }
+  controller.storage.channels.get(message.channel, function(err, channel_data){
+    if (channel_data) {
+      if(tempIssueName!=="")
+        issueCreationConversation(bot,message,tempIssueName);
+      else
+        issueCreationConversation(bot,message,"");
+    }
+    else {
+      bot.reply(message,"Please run init travis <owner>/<repository> before testing issue creation");
+    }
+  })
 });
 
 
@@ -274,13 +329,27 @@ controller.hears(['set coverage threshold','set threshold'],['direct_message','d
   var index = messageArray.indexOf('to');
 
   //repo name has to be word after init
-  if((index+1)<messageArray.length){
-      slack_data.set(`${message.channel}.coverage`,parseInt(messageArray[index+1]));
-      bot.reply(message,"The coverage threshold has been set to "+slack_data.get(message.channel).coverage);
-  }
-  else{
-      bot.reply(message,"Please provide the coverage threshold. Ex set coverage threshold to <number>");
-  }
+  controller.storage.channels.get(message.channel, function (err, channel_data) {
+    if (channel_data) {
+      if ((index + 1) < messageArray.length) {
+        channel_data.coverage = parseInt(messageArray[index + 1]);
+        controller.storage.channels.save(message.channel, channel_data, function (err) {
+          if (err) {
+            bot.reply(message, 'There was an error changing the coverage');
+          }
+          else {
+            bot.reply(message, `The coverage threshold has been set to ${channel_data.coverage}`);
+          }
+        })
+      }
+      else {
+        bot.reply(message, "Please provide the coverage threshold. Ex set coverage threshold to <number>");
+      }
+    }
+    else {
+      bot.reply(message, 'This channel is not initialized');
+    }
+  })
 });
 
 //help section
