@@ -1,5 +1,6 @@
-# TOKEN PART
+# Ignore persistant storage
 **/github_token_storage
+**/slack-data
 
 # NODE PART
 .vscode
