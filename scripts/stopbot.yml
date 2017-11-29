@@ -2,7 +2,8 @@
 - hosts: all
   gather_facts: no
   tasks:
-  - name: Running app
+  - name: Stop bot.js forever process
+    become: true
     shell: forever stopall
-    register: log_output
-  - debug: msg="{{log_output}}"
+    environment:
+      SLACK_TOKEN: # {{ INSERT SLACK TOKEN }}
