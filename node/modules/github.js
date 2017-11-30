@@ -195,6 +195,13 @@ function resetRepoContents(owner, repo, content, file) {
 	});
 }
 
+/**
+ * Delete a file from a repository
+ * 
+ * @param {*} owner 
+ * @param {*} repo 
+ * @param {*} file 
+ */
 function deleteFile(owner, repo, file) {
 	return getFileSha(owner, repo, file).then(function (data) {
 		var options =
@@ -223,6 +230,12 @@ function deleteFile(owner, repo, file) {
 	});
 }
 
+/**
+ * Enable issues for a repository
+ * 
+ * @param {*} owner 
+ * @param {*} repo 
+ */
 function enableIssues(owner, repo) {
 	var options =
 		{
