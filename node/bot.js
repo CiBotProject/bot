@@ -145,7 +145,7 @@ controller.hears(['add-token'], ['direct_message'], function (bot, message) {
   }
 
   tokenManager.addToken(messageArray[0], messageArray[1]);
-  bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored:tada::tada::tada:.`)
+  bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored :tada::tada::tada:.`)
 });
 
 /**
@@ -235,32 +235,35 @@ controller.hears(['configure yaml'], ['direct_message', 'direct_mention', 'menti
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('yaml');
 
+  getChannelDataOrPromptForInit(message, 'set threshold', function (channel_data) {
+    bot.startConversation(message, askYamlCreation);
+  });
 
-  if (messageArray.indexOf('help') === -1 && messageArray.indexOf('yaml') !== -1 && messageArray.indexOf('configure') !== -1) {
-    //repo name has to be word after init
-    var repoString = null;
-    if ((index + 1) < messageArray.length)
-      repoString = messageArray[index + 1];
-    //if repo name is provided
-    if (repoString !== null) {
-      //format is owner/repo-name
-      var repoContent = repoString.split('/');
+  // if (messageArray.indexOf('help') === -1 && messageArray.indexOf('yaml') !== -1 && messageArray.indexOf('configure') !== -1) {
+  //   //repo name has to be word after init
+  //   var repoString = null;
+  //   if ((index + 1) < messageArray.length)
+  //     repoString = messageArray[index + 1];
+  //   //if repo name is provided
+  //   if (repoString !== null) {
+  //     //format is owner/repo-name
+  //     var repoContent = repoString.split('/');
 
-      Travis.activate(repoContent[0], repoContent[1], function (data) {
-        bot.reply(message, data.message);
-        if (data.status === 'error')
-          return;
-        bot.startConversation(message, askYamlCreation);
-      });
+  //     Travis.activate(repoContent[0], repoContent[1], function (data) {
+  //       bot.reply(message, data.message);
+  //       if (data.status === 'error')
+  //         return;
+  //       bot.startConversation(message, askYamlCreation);
+  //     });
 
-    }
-    else {
-      bot.reply(message, "Please provide the name of the repository to be configured. Ex configure yaml <owner>/<repository>");
-    }
-  }
-  else {
-    bot.reply(message, helpCommands().configure);
-  }
+  //   }
+  //   else {
+  //     bot.reply(message, "Please provide the name of the repository to be configured. Ex configure yaml <owner>/<repository>");
+  //   }
+  // }
+  // else {
+  //   bot.reply(message, helpCommands().configure);
+  // }
 });
 
 /**
@@ -311,7 +314,7 @@ controller.hears(['set coverage threshold', 'set threshold'], ['direct_message',
  * 
  * TODO: test last build help
  */
-controller.hears(['help'], ['direct_message', 'direct_mention', 'mention'], function (bot, message) {
+controller.hears(['^help'], ['direct_message', 'direct_mention', 'mention'], function (bot, message) {
   var messageArray = message.text.split(' ');
 
   if (messageArray.indexOf('init') !== -1) {
@@ -329,8 +332,11 @@ controller.hears(['help'], ['direct_message', 'direct_mention', 'mention'], func
   else if (messageArray.indexOf('coveralls') !== -1) {
     bot.reply(message, helpCommands().coveralls);
   }
+  else if (messageArray.indexOf('token') !== -1) {
+    bot.reply(message, helpCommands().token);
+  }
   else {
-    bot.reply(message, "*_help init travis_*, *_help reset travis_*, *_help configure yaml_*, *_help issue_*, *_help coveralls_*");
+    bot.reply(message, "Type one of the following commands to learn more:\n*_help init_*, *_help reset_*, *_help configure yaml_*, *_help issue_*, *_help coveralls_*, *_help token_*");
   }
 });
 
@@ -346,11 +352,12 @@ controller.hears(['help'], ['direct_message', 'direct_mention', 'mention'], func
  */
 function helpCommands() {
   return {
-    init: "*_init travis <owner>/<repository>_* -- Initialize a travis/coveralls integration for a channel",
-    reset: "*_reset travis_* -- Remove the travis/coveralls integration from a channel",
-    configure: "*_configure yaml <owner>/<repository>_* -- Create a .yaml file for the configured repository",
-    issue: "*_create issue_* -- Create an issue for a repository that has been initialized",
-    coveralls: "[*_set coverage threshold_*/*_set threshold_*] *_to_* <_number_> -- Set the coveralls threshold to a specific number. You will be alerted when coverage falls below this."
+    init: "Command: *_init travis <owner>/<repository>_* -- Initialize a travis/coveralls integration for a channel",
+    reset: "Command: *_reset travis_* -- Remove the travis/coveralls integration from a channel",
+    configure: "Command: *_configure yaml <owner>/<repository>_* -- If you chose not to create a .yaml file whith the command *_init travis_*, you may use this command to generate the file later. The operation will fail if the .yaml file already exists.",
+    issue: "Command: *_create issue_* -- Create an issue for a repository that has been initialized",
+    coveralls: "Command: [*_set coverage threshold_*/*_set threshold_*] *_to_* <*_number_*> -- Set the coveralls threshold to a specific number. You will be alerted when coverage falls below this.",
+    token: `Command: *_add-token_* *_<owner>=<token>_* -- Register a token with the bot to enable repositories under a specific owner. You will not be able to initialize repos under an owner until a token has been registered for them. Note: To prevent others from seeing your token, this command can *_ONLY_* be used in a direct chat with @${bot.identity.name} !`
   }
 }
 
