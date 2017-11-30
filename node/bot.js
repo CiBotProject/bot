@@ -28,15 +28,15 @@ var defaultThreshold = 95;
 var myUrl = 'http://13.85.65.255:3000';
 /*
 var tunnel = localtunnel(3000, { subdomain: 'andrewigibektimsamuelsourabh' },function(err, tun) {
-    if (err){
-      console.log("\n\n***** TUNNEL ERROR *****\n\n", err);
-    }// the assigned public url for your tunnel
-    // i.e. https://abcdefgjhij.localtunnel.me
-    else {
-      console.log(tun.url);
-      if(tun.url != myUrl)
-        console.log("Url has been changed.. delete yaml file in repo and reinitialize");
-    }
+  if (err){
+    console.log("\n\n***** TUNNEL ERROR *****\n\n", err);
+  }// the assigned public url for your tunnel
+  // i.e. https://abcdefgjhij.localtunnel.me
+  else {
+    console.log(tun.url);
+    if(tun.url != myUrl)
+      console.log("Url has been changed.. delete yaml file in repo and reinitialize");
+} 
 
 tunnel.on('close', function () {
   // tunnels are closed
