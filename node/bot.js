@@ -238,32 +238,6 @@ controller.hears(['configure yaml'], ['direct_message', 'direct_mention', 'menti
   getChannelDataOrPromptForInit(message, 'set threshold', function (channel_data) {
     bot.startConversation(message, askYamlCreation);
   });
-
-  // if (messageArray.indexOf('help') === -1 && messageArray.indexOf('yaml') !== -1 && messageArray.indexOf('configure') !== -1) {
-  //   //repo name has to be word after init
-  //   var repoString = null;
-  //   if ((index + 1) < messageArray.length)
-  //     repoString = messageArray[index + 1];
-  //   //if repo name is provided
-  //   if (repoString !== null) {
-  //     //format is owner/repo-name
-  //     var repoContent = repoString.split('/');
-
-  //     Travis.activate(repoContent[0], repoContent[1], function (data) {
-  //       bot.reply(message, data.message);
-  //       if (data.status === 'error')
-  //         return;
-  //       bot.startConversation(message, askYamlCreation);
-  //     });
-
-  //   }
-  //   else {
-  //     bot.reply(message, "Please provide the name of the repository to be configured. Ex configure yaml <owner>/<repository>");
-  //   }
-  // }
-  // else {
-  //   bot.reply(message, helpCommands().configure);
-  // }
 });
 
 /**
