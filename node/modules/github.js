@@ -93,8 +93,13 @@ function getFileSha(owner, repo, file) {
 	return new Promise(function (resolve, reject) {
 		request(options, function (error, response, body) {
 			var contents = JSON.parse(body);
-			var sha = contents.sha.toString();
-			resolve(sha);
+			if (contents.sha) {
+				var sha = contents.sha.toString();
+				resolve(sha);
+			}
+			else {
+				resolve('');
+			}
 		});
 	});
 }
