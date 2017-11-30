@@ -7,8 +7,6 @@ var _ = require('underscore');
 
 var urlRoot = process.env.GITHUB_URL ? process.env.GITHUB_TOKEN : "https://api.github.com";
 
-const mockData = require("./mocks/githubMock.json");
-
 var tokenManager = require('./tokenManager.js');
 const utils = require('./utils')
 const constants = require('./constants.js');
@@ -23,12 +21,7 @@ var issueBodySignature = '\n\nCreated by CiBot!';
  * @param {string} repo  the name of the repository whose root contents will be returned
  */
 function getRepoContents(owner, repo)
-{
-	// var myMockData = mockData.getRepoContents.success
-	// var mockMe = nock(urlRoot)
-	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-	
+{	
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/contents`,
@@ -545,11 +538,6 @@ back to the person who delivered the offending commit. '
  */
 function getCommitterLoginWithHash(owner, repo, hash)
 {
-	// var myMockData = mockData.getRepoContents.success
-	// var mockMe = nock(urlRoot)
-	// .get(`${urlRoot}/repos/${owner}/${repo}/contents/${file}`)
-	// .reply(myMockData.statusCode, JSON.stringify(myMockData.message));
-	
     var options =
     {
         url: `${urlRoot}/repos/${owner}/${repo}/commits/${hash}`,
