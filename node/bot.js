@@ -317,22 +317,20 @@ controller.hears(['help'], ['direct_message', 'direct_mention', 'mention'], func
   if (messageArray.indexOf('init') !== -1) {
     bot.reply(message, helpCommands().init);
   }
+  else if (messageArray.indexOf('reset') !== -1) {
+    bot.reply(message, helpCommands().reset);
+  }
   else if (messageArray.indexOf('configure') !== -1) {
     bot.reply(message, helpCommands().configure);
   }
   else if (messageArray.indexOf('issue') !== -1) {
-    if (messageArray.indexOf('change') !== -1) {
-      bot.reply(message, helpCommands().existing_issue);
-    }
-    else {
-      bot.reply(message, helpCommands().issue);
-    }
+    bot.reply(message, helpCommands().issue);
   }
   else if (messageArray.indexOf('coveralls') !== -1) {
     bot.reply(message, helpCommands().coveralls);
   }
   else {
-    bot.reply(message, "*_help init travis_*, *_help configure yaml_*, *_help issue creation_*");
+    bot.reply(message, "*_help init travis_*, *_help reset travis_*, *_help configure yaml_*, *_help issue_*, *_help coveralls_*");
   }
 });
 
@@ -342,14 +340,17 @@ controller.hears(['help'], ['direct_message', 'direct_mention', 'mention'], func
  * 
  * ************************
  */
+
 /**
- * 
+ * Second level help commands to report to user
  */
 function helpCommands() {
   return {
-    init: "*_init travis <owner>/<repository>_*",
-    configure: "*_configure yaml <owner>/<repository>_*",
-    issue: "*_create issue_*",
+    init: "*_init travis <owner>/<repository>_* -- Initialize a travis/coveralls integration for a channel",
+    reset: "*_reset travis_* -- Remove the travis/coveralls integration from a channel",
+    configure: "*_configure yaml <owner>/<repository>_* -- Create a .yaml file for the configured repository",
+    issue: "*_create issue_* -- Create an issue for a repository that has been initialized",
+    coveralls: "[*_set coverage threshold_*/*_set threshold_*] *_to_* <_number_> -- Set the coveralls threshold to a specific number. You will be alerted when coverage falls below this."
   }
 }
 
