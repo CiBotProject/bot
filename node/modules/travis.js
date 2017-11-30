@@ -43,6 +43,7 @@ function activate(owner, reponame, callback){
                     resp.status = constant.ERROR;
                     resp.message = `Error occured when tried to activate travis for ${owner}/${reponame}:scream:`;
                     resp.data.body = err;
+                    console.log(err)
                     callback(resp);
                     return;
                 }
@@ -88,8 +89,9 @@ function activate(owner, reponame, callback){
  * This function returns yaml file body for specified technology
  * @param {String} technology
  * @param {String} postUrl URL to post build notifications to
+ * @param {String} channel Channel id to return POST requests to
  */
-function createYaml(technology, postUrl,owner,repo){
+function createYaml(technology, postUrl, channel){
     let resp = constant.getMessageStructure();
 
     if(!supportedTechs.hasOwnProperty(technology.toLowerCase())){
@@ -101,7 +103,7 @@ function createYaml(technology, postUrl,owner,repo){
     let techJson = clone(supportedTechs[technology.toLocaleLowerCase()]);
 
     if (postUrl !== undefined){
-        techJson.notifications.webhooks.urls.push(`${postUrl}/travis`);
+        techJson.notifications.webhooks.urls.push(`${postUrl}/travis/${channel}`);
     }
 
     let yaml = YAML.stringify( techJson );
