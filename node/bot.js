@@ -271,7 +271,7 @@ controller.hears(['create issue'], ['direct_message', 'direct_mention', 'mention
  * 
  * Set the coveralls threshold for a repository on a channel
  */
-controller.hears(['set coverage threshold', 'set threshold'], ['direct_message', 'direct_mention', 'mention'], function (bot, message) {
+controller.hears(['set coverage threshold to', 'set threshold to'], ['direct_message', 'direct_mention', 'mention'], function (bot, message) {
   //TODO add bounds between 0 - 100 as it is percentage
   var messageArray = message.text.split(' ');
   var index = messageArray.indexOf('to');
