@@ -264,13 +264,15 @@ controller.hears(['set coverage threshold', 'set threshold'], ['direct_message',
   getChannelDataOrPromptForInit(message, 'set threshold', function (channel_data) {
     if ((index + 1) < messageArray.length) {
       channel_data.coverage = parseInt(messageArray[index + 1]);
-      controller.storage.channels.save(message.channel, channel_data, function (err) {
-        if (err) {
-          bot.reply(message, 'There was an error changing the coverage');
-        }
-        else {
-          bot.reply(message, `The coverage threshold has been set to ${channel_data.coverage}`);
-        }
+      getChannelDataOrPromptForInit(message, 'set threshold', function(channel_data) {
+        controller.storage.channels.save(channel_data, function (err) {
+          if (err) {
+            bot.reply(message, 'There was an error changing the coverage');
+          }
+          else {
+            bot.reply(message, `The coverage threshold has been set to ${channel_data.coverage}`);
+          }
+        })
       })
     }
     else {
