@@ -26,22 +26,25 @@ var controller = Botkit.slackbot({
 
 var defaultThreshold = 95;
 
-var myUrl = 'http://13.85.65.255:3000';
-/*
-var tunnel = localtunnel(3000, { subdomain: 'andrewigibektimsamuelsourabh' },function(err, tun) {
+// var myUrl = 'http://13.85.65.255:3000';
+var myUrl = ''
+
+var tunnel = localtunnel(3000, { /*subdomain: 'andrewigibektimsamuelsourabh' */},function(err, tun) {
   if (err){
     console.log("\n\n***** TUNNEL ERROR *****\n\n", err);
   }// the assigned public url for your tunnel
   // i.e. https://abcdefgjhij.localtunnel.me
   else {
+    myUrl = tun.url;
     console.log(tun.url);
     if(tun.url != myUrl)
       console.log("Url has been changed.. delete yaml file in repo and reinitialize");
-} 
+  }
+})
 
 tunnel.on('close', function () {
   // tunnels are closed
-});*/
+});
 
 // slack_data.set("defaultThreshold",95);
 
@@ -81,12 +84,14 @@ app.post("/travis/:channel", function (req, res) {
 
   controller.storage.channels.get(channel, function (err, channel_data) {
     if (channel_data) {
+      let broken = false;
       if (payload.state === "failed") {
         msg.text = `Build has failed. To create an issue please type "@${bot.identity.name} create issue"`
         bot.say(msg);
 
         channel_data.issue.title = `Build with commit_id ${payload.commit_id} has failed`;
-        channel_data.issue.breaker = payload.author_email.split('@')[0];
+        broken = true;
+        // channel_data.issue.breaker = payload.author_email.split('@')[0];
       }
       else {
         Coveralls.getCoverageInfo(commit, channel_data.coverage).then(function (coverage) {
@@ -102,11 +107,28 @@ app.post("/travis/:channel", function (req, res) {
             bot.say(msg);
 
             channel_data.issue.title = `Coverage ${coverageBelowThreshold} percent below threshold`;
-            channel_data.issue.breaker = payload.author_email.split('@')[0];
+            broken = true;
+            // channel_data.issue.breaker = payload.author_email.split('@')[0];
           }
         });
       }
-      saveChannelDataLogError(channel_data, 'POST RESPONSE')
+      if (broken) {
+        Travis.lastBuild(channel_data.owner, channel_data.repo, payload.commit_id, function(resp){
+          var getBreakerFunction = function(hash){
+            return Github.getCommitterLoginWithHash(channel_data.owner, channel_data.repo, hash);
+            let breakers = Promise.all(resp.data.sha.map(getBreakerFunction));
+            breakers.then(function(users){
+              console.log('found the following breaker(s):')
+              console.log(users)
+              channel_data.issue.breaker.push(users);
+              saveChannelDataLogError(channel_data, 'POST RESPONSE broken')
+            })
+          }
+        })
+      }
+      else {
+        saveChannelDataLogError(channel_data, 'POST RESPONSE')
+      }
     }
     else {
       console.log(`**POST ERROR** Received post from Travis but could not find a channel!\n\nparams: ${JSON.stringify(req.params)}\npayload: ${JSON.stringify(payload)}`)
@@ -202,7 +224,7 @@ controller.hears(['init travis'], ['direct_message', 'direct_mention', 'mention'
                 'repo': repo,
                 'coverage': defaultThreshold,
                 'issue': {
-                  'breaker': '',
+                  'breaker': [],
                   'title': '',
                   'body': ''
                 }
@@ -453,7 +475,7 @@ function askChannelReset(response, convo) {
         convo.next();
       }
       Travis.deactivate(channel_data.owner, channel_data.repo, function (data) {
-        bot.reply(message, data.message);
+        bot.say(data.message);
       });
       controller.storage.channels.delete(channel_data.id, function (err) {
         console.log(err)
@@ -622,7 +644,7 @@ function askToAssignPeople(response, convo) {
 
       channel_data.issue.title = '';
       channel_data.issue.body = '';
-      channel_data.issue.breaker = '';
+      channel_data.issue.breaker = [];
       saveChannelDataLogError(channel_data, 'askToAssignPeople', function () {
         convo.next();
       });

@@ -205,7 +205,7 @@ function listTechnologies(){
  * @param {String} owner
  * @param {String} repo
  */
-function lastBuild(owner, reponame, callback){
+function lastBuild(owner, reponame, commit_id, callback){
 
     let resp = constant.getMessageStructure();
 
@@ -224,23 +224,30 @@ function lastBuild(owner, reponame, callback){
         //console.log(body);
         let json = JSON.parse(body);
 
-        let lastBuildId = json.builds[0].id;
-        let lastBuildState = json.builds[0].state;
-        if(lastBuildState === 'failed'){
-            json.commits.filter(function(path){
-                return path.id === json.builds[0].commit_id;
-            }).forEach(function(path){
-                resp.status = constant.FAILURE;
-                resp.message = `The last build for ${owner}/${reponame} failed`;
-                resp.data.body = path;
-                resp.data.blame.push(path.author_email);
-                callback(resp);
-            });
-        } else if(lastBuildState === 'success'){
+        console.log(json)
+        // let lastBuildId = json.builds[0].id;
+        let lastBuildResult = json[0].result;
+        if (lastBuildResult === 0){
             resp.status = constant.SUCCESS;
             resp.message = `The last build for ${owner}/${reponame} succeed`;
             callback(resp);
         }
+        else {
+            json.filter(function(path){
+                return path.id === commit_id;
+            }).forEach(function(path){
+                resp.status = constant.FAILURE;
+                resp.message = `The last build for ${owner}/${reponame} failed`;
+                resp.data.body = path;
+                // resp.data.blame.push(path.author_email);
+                resp.data.sha.push(path.commit);
+            });
+            callback(resp);
+        }
+        // if(lastBuildState === 'failed'){
+        // } else if(lastBuildState === 'success'){
+            
+        // }
     });
 }
 
