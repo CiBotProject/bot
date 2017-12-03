@@ -396,12 +396,12 @@ function saveChannelDataLogError(data, location) {
  * *****************************
  */
 
- /**
-  * 
-  * @param {*} response 
-  * @param {*} convo 
-  */
-function askYamlCreation (response, convo) {
+/**
+ * 
+ * @param {*} response 
+ * @param {*} convo 
+ */
+function askYamlCreation(response, convo) {
   convo.ask('Would you like to create a yaml file (yes/no)?', function (response, convo) {
     if (response.text.toLowerCase() === "yes") {
       askLanguageToUse(response, convo);
@@ -425,7 +425,7 @@ function askYamlCreation (response, convo) {
  * @param {*} response 
  * @param {*} convo 
  */
-function askChannelReset(response, convo){
+function askChannelReset(response, convo) {
   convo.ask('Would you like to delete the yaml file from the repo (yes/no)?', function (response, convo) {
     getChannelDataOrPromptForInit(convo.source_message, 'askChannelReset', function (channel_data) {
       if (response.text.toLowerCase() === "yes") {
@@ -444,6 +444,9 @@ function askChannelReset(response, convo){
         convo.say("I consider this response to be a 'no'. I have left the yaml file.");
         convo.next();
       }
+      Travis.deactivate(channel_data.owner, channel_data.repo, function (data) {
+        bot.reply(message, data.message);
+      });
       controller.storage.channels.delete(channel_data.id, function (err) {
         console.log(err)
         if (err) {
@@ -463,7 +466,7 @@ function askChannelReset(response, convo){
  * @param {*} response 
  * @param {*} convo 
  */
-function askLanguageToUse (response, convo) {
+function askLanguageToUse(response, convo) {
   convo.ask('Which language do you want to use? ' + Travis.listTechnologies().data.body.join(', '), function (response, convo) {
     getChannelDataOrPromptForInit(convo.source_message, 'askLanguageToUse', function (channel_data) {
       let repo = channel_data.repo;
@@ -501,12 +504,12 @@ function askLanguageToUse (response, convo) {
   });
 }
 
- /**
-  * 
-  * @param {*} response 
-  * @param {*} convo 
-  */
-function askToCreateIssue (response, convo) {
+/**
+ * 
+ * @param {*} response 
+ * @param {*} convo 
+ */
+function askToCreateIssue(response, convo) {
   getChannelDataOrPromptForInit(convo.source_message, 'askToCreateIssue', function (channel_data) {
     if (channel_data.issue.title === "") {
       askToCreateNewIssue(response, convo);
@@ -522,7 +525,7 @@ function askToCreateIssue (response, convo) {
  * @param {*} response 
  * @param {*} convo 
  */
-function askToCreateNewIssue (response, convo) {
+function askToCreateNewIssue(response, convo) {
   getChannelDataOrPromptForInit(convo.source_message, 'askToCreateNewIssue', function (channel_data) {
     convo.ask('Please enter the name of the issue', function (response, convo) {
       channel_data.issue.title = response.text;
@@ -540,7 +543,7 @@ function askToCreateNewIssue (response, convo) {
  * @param {*} response 
  * @param {*} convo 
  */
-function askToCreateExistingIssue (response, convo) {
+function askToCreateExistingIssue(response, convo) {
   getChannelDataOrPromptForInit(convo.source_message, 'askToCreateExistingIssue', function (channel_data) {
     let name = channel_data.issue.title;
     let body = '';
@@ -571,7 +574,7 @@ function askToCreateExistingIssue (response, convo) {
  * @param {*} response 
  * @param {*} convo 
  */
-function askToAssignPeople (response, convo) {
+function askToAssignPeople(response, convo) {
   getChannelDataOrPromptForInit(convo.source_message, 'askToAssignPeople', function (channel_data) {
     convo.ask('Please enter a comma-separated list of github usernames to the issue. Ex user1,user2,user3...', function (response, convo) {
       let listOutput = response.text;
