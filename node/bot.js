@@ -380,10 +380,11 @@ function getChannelDataOrPromptForInit(message, location, callback) {
 
 /**
  * 
- * @param {*} data 
- * @param {*} location 
+ * @param {*} data data to save in the data store
+ * @param {*} location code location called -- used when logging error
+ * @param {*} onSuccess function to call if save succeeds
  */
-function saveChannelDataLogError(data, location) {
+function saveChannelDataLogError(data, location, onSuccess) {
   if (location === undefined) {
     location = '';
   }
@@ -393,6 +394,11 @@ function saveChannelDataLogError(data, location) {
   controller.storage.channels.save(data, function (err) {
     if (err) {
       console.log(`Data save ${location}failed.\ndata: ${JSON.stringify(data)}\nerror: ${err}`)
+    }
+    else {
+      if (onSuccess) {
+        onSuccess();
+      }
     }
   })
 }
@@ -538,11 +544,12 @@ function askToCreateNewIssue(response, convo) {
   getChannelDataOrPromptForInit(convo.source_message, 'askToCreateNewIssue', function (channel_data) {
     convo.ask('Please enter the name of the issue', function (response, convo) {
       channel_data.issue.title = response.text;
-      saveChannelDataLogError(channel_data, 'askToCreateNewIssue')
+      saveChannelDataLogError(channel_data, 'askToCreateNewIssue', function () {
 
-      convo.say(`I'm creating an issue titled *${channel_data.issue.title}*`);
-      askToAssignPeople(response, convo);
-      convo.next();
+        convo.say(`I'm creating an issue titled *${channel_data.issue.title}*`);
+        askToAssignPeople(response, convo);
+        convo.next();
+      })
     });
   })
 }
@@ -563,18 +570,18 @@ function askToCreateExistingIssue(response, convo) {
     else if (name.includes("Build")) {
       channel_data.issue.body = "Build failure";
     }
-    saveChannelDataLogError(channel_data, 'askToCreateExistingIssue');
+    saveChannelDataLogError(channel_data, 'askToCreateExistingIssue', function () {
 
-    convo.ask(`Current issue title is set to *${name}*. Do you want to change the title of the issue (yes/no)?`, function (response, convo) {
-      if (response.text.toLowerCase() === "yes") {
-        askToCreateNewIssue(response, convo);
-      }
-      else {
-        askToAssignPeople(response, convo);
-      }
-      convo.next();
+      convo.ask(`Current issue title is set to *${name}*. Do you want to change the title of the issue (yes/no)?`, function (response, convo) {
+        if (response.text.toLowerCase() === "yes") {
+          askToCreateNewIssue(response, convo);
+        }
+        else {
+          askToAssignPeople(response, convo);
+        }
+        convo.next();
+      });
     });
-
   })
 }
 
@@ -593,7 +600,7 @@ function askToAssignPeople(response, convo) {
       let listOfassignees = listOutput.split(",").map(function (item) {
         return item.trim();
       });;
-      let issueName = channel_data.issue.title
+      var issueName = channel_data.issue.title
 
       convo.say(`I am going to create an issue titled *${issueName}* and assign it to ` + listOutput);
 
@@ -623,8 +630,9 @@ function askToAssignPeople(response, convo) {
       channel_data.issue.title = '';
       channel_data.issue.body = '';
       channel_data.issue.breaker = '';
-      saveChannelDataLogError(channel_data, 'askToAssignPeople');
-      convo.next();
+      saveChannelDataLogError(channel_data, 'askToAssignPeople', function () {
+        convo.next();
+      });
     });
   })
 }
