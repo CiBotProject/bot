@@ -136,11 +136,6 @@ controller.hears(['add-token'], ['direct_message'], function (bot, message) {
   }
   messageArray = messageArray[1].split('=');
 
-  if (messageArray.length < 2) {
-    bot.reply(message, `The command syntax is *add-token user=token*`);
-    return;
-  }
-
   tokenManager.addToken(messageArray[0], messageArray[1]);
   bot.reply(message, `The user "${messageArray[0]}" token "${messageArray[1]}" is stored :tada::tada::tada:.`)
 });
