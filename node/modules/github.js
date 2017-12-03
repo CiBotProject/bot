@@ -1,4 +1,3 @@
-var nock = require('nock');
 var Promise = require('bluebird');
 var request = require('request');
 var _ = require('underscore');
