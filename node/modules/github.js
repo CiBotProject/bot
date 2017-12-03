@@ -597,8 +597,9 @@ function getCommitterLoginWithHash(owner, repo, hash) {
 	return new Promise(function (resolve, reject) {
 		request(options, function (error, response, body) {
 			var contents = JSON.parse(body).committer;
-			console.log(contents);
-			resolve(contents);
+			console.log('getCommitterLoginWithHash');
+			// console.log(contents);
+			resolve(contents.login);
 		});
 	});
 }
