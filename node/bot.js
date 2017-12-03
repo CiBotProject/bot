@@ -78,51 +78,47 @@ app.post("/travis/:channel", function (req, res) {
   let channel = req.params.channel;
   console.log(payload);
 
-  let msg = {
+  var msg = {
     'text': '',
     'channel': channel // channel Id for #slack_integration
   };
 
+
   controller.storage.channels.get(channel, function (err, channel_data) {
     if (channel_data) {
-      let broken = false;
+      getBreaker = function() {
+        Travis.lastBuild(channel_data.owner, channel_data.repo, payload.commit_id, function(resp){
+          // console.log(resp);
+          Github.getCommitterLoginWithHash(channel_data.owner, channel_data.repo, payload.commit).then( function(breaker){
+            channel_data.issue.breaker.push(breaker);
+            saveChannelDataLogError(channel_data, 'POST RESPONSE broken')
+          });
+        });
+      }
+
       if (payload.state === "failed") {
         msg.text = `Build has failed. To create an issue please type "@${bot.identity.name} create issue"`
 
         channel_data.issue.title = `Build with commit_id ${payload.commit_id} has failed`;
-        broken = true;
+        getBreaker();
+        bot.say(msg);
       }
       else {
         Coveralls.getCoverageInfo(commit, channel_data.coverage).then(function (coverage) {
-
-          if (coverage.status === 'success') {
+          if (coverage.status === constants.SUCCESS) {
             msg.text = coverage.message;
           }
-          else if (coverage.status === 'failure') {
+          else if (coverage.status === constants.FAILURE) {
             var coverageBelowThreshold = channel_data.coverage - coverage.data.body.covered_percent;
 
             msg.text = `Coverage ${coverageBelowThreshold} percent below threshold. To create an issue please type "@${bot.identity.name} create issue"`
 
             channel_data.issue.title = `Coverage ${coverageBelowThreshold} percent below threshold`;
-            broken = true;
+            getBreaker();
           }
+          bot.say(msg);
         });
       }
-      console.log(broken)
-      if (broken) {
-        Travis.lastBuild(channel_data.owner, channel_data.repo, payload.commit_id, function(resp){
-          console.log(resp);
-          Github.getCommitterLoginWithHash(channel_data.owner, channel_data.repo, payload.commit).then( function(breaker){
-            channel_data.issue.breaker.push(breaker);
-            saveChannelDataLogError(channel_data, 'POST RESPONSE broken')
-          }
-          )
-        })
-      }
-      else {
-        saveChannelDataLogError(channel_data, 'POST RESPONSE')
-      }
-      bot.say(msg);
     }
     else {
       console.log(`**POST ERROR** Received post from Travis but could not find a channel!\n\nparams: ${JSON.stringify(req.params)}\npayload: ${JSON.stringify(payload)}`)
