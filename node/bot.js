@@ -1,3 +1,4 @@
+var constants = require('./modules/constants')
 var localtunnel = require('localtunnel');
 var Botkit = require('botkit');
 var Coveralls = require('./modules/coveralls');
@@ -180,19 +181,9 @@ controller.hears(['init travis'], ['direct_message', 'direct_mention', 'mention'
         //if repo name is provided
         if (repoString !== null) {
           //format is owner/repo-name
-          var repoContent = repoString.split('/');
-
-          controller.storage.channels.save({
-            'id': message.channel,
-            'repo': repoContent[1],
-            'owner': repoContent[0],
-            'coverage': defaultThreshold,
-            'issue': {
-              'breaker': '',
-              'title': '',
-              'body': ''
-            }
-          });
+          let repoContent = repoString.split('/');
+          let owner = repoContent[0];
+          let repo = repoContent[1];
 
           //console.log(tokenManager.getToken())
           if (tokenManager.getToken(repoContent[0]) === null) {
@@ -201,12 +192,28 @@ controller.hears(['init travis'], ['direct_message', 'direct_mention', 'mention'
           }
 
           // Enable issues before activating Travis
-          Github.enableIssues(repoContent[0], repoContent[1]).then(function () {
-            Travis.activate(repoContent[0], repoContent[1], function (data) {
-              bot.reply(message, data.message);
-              if (data.status === 'error')
-                return;
-              bot.startConversation(message, askYamlCreation);
+          Github.enableIssues(owner, repo).then(function () {
+            Travis.activate(owner, repo, function (data) {
+              controller.storage.channels.save({
+                'id': message.channel,
+                'owner': owner,
+                'repo': repo,
+                'coverage': defaultThreshold,
+                'issue': {
+                  'breaker': '',
+                  'title': '',
+                  'body': ''
+                }
+              }, function (err) {
+                if (err || data.status == constants.ERROR) {
+                  console.log(err);
+                  console.log(data);
+                  return
+                } else {
+                  bot.reply(message, data.message);
+                  bot.startConversation(message, askYamlCreation);
+                }
+              });
             });
           });
         }
@@ -264,7 +271,7 @@ controller.hears(['set coverage threshold', 'set threshold'], ['direct_message',
   getChannelDataOrPromptForInit(message, 'set threshold', function (channel_data) {
     if ((index + 1) < messageArray.length) {
       channel_data.coverage = parseInt(messageArray[index + 1]);
-      getChannelDataOrPromptForInit(message, 'set threshold', function(channel_data) {
+      getChannelDataOrPromptForInit(message, 'set threshold', function (channel_data) {
         controller.storage.channels.save(channel_data, function (err) {
           if (err) {
             bot.reply(message, 'There was an error changing the coverage');
